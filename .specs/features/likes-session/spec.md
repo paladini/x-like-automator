@@ -259,7 +259,7 @@ Every ambiguity is resolved or recorded here. Nothing is left silently unclear. 
 | LIKE-03 | P1: Pick posts, pace them, and honor the cap | Tasks | Implementing |
 | LIKE-04 | P1: Handle a reply thread | Tasks | Implementing |
 | LIKE-05 | P1: Keep going when the feed stalls | Tasks | Implementing |
-| LIKE-06 | P1: Control it from a clear popup | Tasks | In Tasks |
+| LIKE-06 | P1: Control it from a clear popup | Tasks | Implementing |
 | LIKE-07 | P1: Load it unpacked and read the limits | Tasks | In Tasks |
 
 **Coverage:** 7 total, 7 mapped to tasks (T1–T8), 0 unmapped

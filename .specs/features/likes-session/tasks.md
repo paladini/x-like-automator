@@ -266,18 +266,20 @@ T6 -> T7
 
 **Done when**:
 
-- [ ] An invalid interval does not call `storage.set` and shows the spec sentence
-- [ ] A valid form saves the validated settings object
-- [ ] Start on a non-X tab sends no start message
-- [ ] Start on an X tab sends start to that tab
-- [ ] The status node shows the spec sentence and the count prefix
-- [ ] `node --test` passes
-- [ ] Test count is higher than before this task and none are skipped
+- [x] An invalid interval does not call `storage.set` and shows the spec sentence
+- [x] A valid form saves the validated settings object
+- [x] Start on a non-X tab sends no start message
+- [x] Start on an X tab sends start to that tab
+- [x] The status node shows the spec sentence and the count prefix
+- [x] `node --test` passes
+- [x] Test count is higher than before this task and none are skipped
 
 **Tests**: unit
 **Gate**: build
 
 **Commit**: `feat(popup): wire settings and live status`
+
+**Status**: Complete. Gate `node --test`: 96 passed, 0 failed, 0 skipped.
 
 ---
 
