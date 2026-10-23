@@ -44,17 +44,29 @@ function paintSession(elements, session) {
   elements.count.textContent = `Curtidas nesta sessão: ${likeCount}`;
 }
 
+const NOT_X_STATUS = "Abra uma aba do X para iniciar.";
+const RELOAD_STATUS = "Recarregue a aba do X e toque em Iniciar de novo.";
+
 async function activeTab(tabs) {
   const tabsFound = await tabs.query({ active: true, currentWindow: true });
   return tabsFound[0] ?? null;
 }
 
-async function tell(runtime, tab, type) {
-  if (!tab || !isXUrl(tab.url)) return;
-  await runtime.sendMessage(tab.id, { type }).catch(() => {});
+async function tell(tabsApi, tab, type) {
+  if (!tab || !isXUrl(tab.url)) return { ok: false, reason: "not-x" };
+  try {
+    await tabsApi.sendMessage(tab.id, { type });
+    return { ok: true };
+  } catch {
+    return { ok: false, reason: "no-receiver" };
+  }
 }
 
-export async function createController({ storage, tabs, runtime, elements }) {
+function showDeliveryProblem(elements, reason) {
+  elements.status.textContent = reason === "not-x" ? NOT_X_STATUS : RELOAD_STATUS;
+}
+
+export async function createController({ storage, tabs, elements }) {
   const stored = await storage.local.get(SETTINGS_STORAGE_KEY);
   const validated = validateSettings(stored[SETTINGS_STORAGE_KEY] ?? defaultSettings());
   paintSettings(elements, validated.ok ? validated.settings : defaultSettings());
@@ -79,18 +91,22 @@ export async function createController({ storage, tabs, runtime, elements }) {
     }
     elements.error.textContent = "";
     await storage.local.set({ [SETTINGS_STORAGE_KEY]: result.settings });
-    await tell(runtime, await activeTab(tabs), "start");
+    const started = await tell(tabs, await activeTab(tabs), "start");
+    if (!started.ok) showDeliveryProblem(elements, started.reason);
   });
 
   elements.stop.addEventListener("click", async () => {
-    await tell(runtime, await activeTab(tabs), "stop");
+    const stopped = await tell(tabs, await activeTab(tabs), "stop");
+    if (!stopped.ok) showDeliveryProblem(elements, stopped.reason);
   });
 
-  await tell(runtime, await activeTab(tabs), "popup-open");
+  const opened = await tell(tabs, await activeTab(tabs), "popup-open");
+  if (!opened.ok && opened.reason === "no-receiver") showDeliveryProblem(elements, opened.reason);
 
   return {
     async close() {
-      await tell(runtime, await activeTab(tabs), "popup-close");
+      const closed = await tell(tabs, await activeTab(tabs), "popup-close");
+      if (!closed.ok && closed.reason === "no-receiver") showDeliveryProblem(elements, closed.reason);
     },
   };
 }
@@ -110,7 +126,6 @@ export function boot(chromeApi = globalThis.chrome, doc = globalThis.document) {
   const controller = createController({
     storage: chromeApi.storage,
     tabs: chromeApi.tabs,
-    runtime: chromeApi.runtime,
     elements,
   });
   globalThis.addEventListener?.("pagehide", () => {

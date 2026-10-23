@@ -60,18 +60,16 @@ function harness({ url = "https://x.com/home", session, local } = {}) {
     async query() {
       return [{ id: 7, url }];
     },
-  };
-  const runtime = {
     async sendMessage(tabId, message) {
       messages.push({ tabId, message });
     },
   };
-  return { elements, storage, tabs, runtime, sets, messages, listeners };
+  return { elements, storage, tabs, sets, messages, listeners };
 }
 
 test("an invalid interval does not save and shows the spec sentence", async () => {
-  const { elements, storage, tabs, runtime, sets, messages } = harness();
-  await createController({ storage, tabs, runtime, elements });
+  const { elements, storage, tabs, sets, messages } = harness();
+  await createController({ storage, tabs, elements });
   elements.interval.valueAsNumber = 0;
   await elements.start.click();
   assert.equal(sets.length, 0);
@@ -81,8 +79,8 @@ test("an invalid interval does not save and shows the spec sentence", async () =
 });
 
 test("a valid form saves the validated settings", async () => {
-  const { elements, storage, tabs, runtime, sets } = harness();
-  await createController({ storage, tabs, runtime, elements });
+  const { elements, storage, tabs, sets } = harness();
+  await createController({ storage, tabs, elements });
   await elements.start.click();
   assert.deepEqual(sets, [{
     settings: {
@@ -95,15 +93,16 @@ test("a valid form saves the validated settings", async () => {
 });
 
 test("start on a non-X tab sends no start message", async () => {
-  const { elements, storage, tabs, runtime, messages } = harness({ url: "https://example.com/" });
-  await createController({ storage, tabs, runtime, elements });
+  const { elements, storage, tabs, messages } = harness({ url: "https://example.com/" });
+  await createController({ storage, tabs, elements });
   await elements.start.click();
   assert.equal(messages.some((entry) => entry.message.type === "start"), false);
+  assert.equal(elements.status.textContent, "Abra uma aba do X para iniciar.");
 });
 
-test("start on an X tab sends start to that tab", async () => {
-  const { elements, storage, tabs, runtime, messages } = harness({ url: "https://x.com/home" });
-  await createController({ storage, tabs, runtime, elements });
+test("start on an X tab sends start through tabs.sendMessage", async () => {
+  const { elements, storage, tabs, messages } = harness({ url: "https://x.com/home" });
+  await createController({ storage, tabs, elements });
   await elements.start.click();
   assert.deepEqual(
     messages.filter((entry) => entry.message.type === "start"),
@@ -111,11 +110,30 @@ test("start on an X tab sends start to that tab", async () => {
   );
 });
 
+test("a synchronous send failure stays caught and asks for a reload", async () => {
+  const { elements, storage, tabs } = harness({ url: "https://x.com/home" });
+  tabs.sendMessage = () => {
+    throw new TypeError("Unexpected property: 'type'");
+  };
+  await createController({ storage, tabs, elements });
+  await elements.start.click();
+  assert.equal(elements.status.textContent, "Recarregue a aba do X e toque em Iniciar de novo.");
+});
+
+test("a content script that does not answer asks for a reload", async () => {
+  const { elements, storage, tabs } = harness({ url: "https://x.com/home" });
+  tabs.sendMessage = async () => {
+    throw new Error("Could not establish connection. Receiving end does not exist.");
+  };
+  await createController({ storage, tabs, elements });
+  assert.equal(elements.status.textContent, "Recarregue a aba do X e toque em Iniciar de novo.");
+});
+
 test("the status node shows the spec sentence and the count prefix", async () => {
-  const { elements, storage, tabs, runtime, listeners } = harness({
+  const { elements, storage, tabs, listeners } = harness({
     session: { status: "paused_inactive", likeCount: 4 },
   });
-  await createController({ storage, tabs, runtime, elements });
+  await createController({ storage, tabs, elements });
   assert.equal(elements.status.textContent, "Pausado: a aba do X não está ativa");
   assert.equal(elements.count.textContent, "Curtidas nesta sessão: 4");
 
