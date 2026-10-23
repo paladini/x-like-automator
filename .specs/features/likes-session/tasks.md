@@ -237,15 +237,17 @@ T6 -> T7
 
 **Done when**:
 
-- [ ] Background color `#12141a` and text color `#f4f1ea` are declared
-- [ ] A `:focus-visible` outline is declared
-- [ ] `node --test` passes
-- [ ] Test count is higher than before this task and none are skipped
+- [x] Background color `#12141a` and text color `#f4f1ea` are declared
+- [x] A `:focus-visible` outline is declared
+- [x] `node --test` passes
+- [x] Test count is higher than before this task and none are skipped
 
 **Tests**: unit
 **Gate**: quick
 
 **Commit**: `feat(popup): add the dark accessible stylesheet`
+
+**Status**: Complete. Gate `node --test`: 91 passed, 0 failed, 0 skipped.
 
 ---
 
