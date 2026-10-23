@@ -13,7 +13,21 @@ test("content scripts run on x.com and twitter.com", () => {
     "https://x.com/*",
     "https://twitter.com/*",
   ]);
-  assert.equal(manifest.content_scripts[0].type, "module");
+  assert.deepEqual(manifest.content_scripts[0].js, ["lib/policy.js", "content/content.js"]);
+});
+
+test("an x.com content script with a bare import must be loaded as a module", () => {
+  const script = manifest.content_scripts.find((entry) =>
+    (entry.matches || []).some((match) => match.includes("x.com")),
+  );
+  assert.ok(script);
+  const sources = script.js.map((file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8"));
+  const bareModuleSyntax = sources.some((source) => /^\s*(import|export)\s/m.test(source));
+  if (bareModuleSyntax) {
+    assert.equal(script.type, "module");
+  } else {
+    assert.notEqual(script.type, "module");
+  }
 });
 
 test("permissions are storage only", () => {

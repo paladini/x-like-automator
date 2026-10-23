@@ -1,4 +1,4 @@
-import * as policy from "../lib/policy.js";
+const policy = globalThis.XLikesPolicy;
 
 const TWEET = [
   "article[data-testid='tweet']",
@@ -10,7 +10,7 @@ const TWEET = [
   "article:has(button[aria-label='Descurtir'])",
 ].join(", ");
 
-export function createSessionRunner({
+function createSessionRunner({
   rules = policy,
   getSettings,
   readSnapshot,
@@ -158,12 +158,12 @@ function outermostTweets(doc) {
   return [...doc.querySelectorAll(TWEET)].filter((article) => !article.parentElement?.closest(TWEET));
 }
 
-export function statusIdFromHref(href) {
+function statusIdFromHref(href) {
   const match = String(href ?? "").match(/\/status\/(\d+)/);
   return match ? match[1] : "";
 }
 
-export function isLoginEntryHref(href) {
+function isLoginEntryHref(href) {
   if (!href) return false;
   try {
     const url = new URL(href, "https://x.com");
@@ -175,14 +175,14 @@ export function isLoginEntryHref(href) {
   }
 }
 
-export function isLoginWallUrl(href) {
+function isLoginWallUrl(href) {
   return isLoginEntryHref(href);
 }
 
 const NOT_YET_LIKED = new Set(["Like", "Curtir"]);
 const ALREADY_LIKED = new Set(["Unlike", "Descurtir"]);
 
-export function likeControlState({ testid = "", ariaLabel = "", pressed = "" } = {}) {
+function likeControlState({ testid = "", ariaLabel = "", pressed = "" } = {}) {
   if (testid === "unlike" || ALREADY_LIKED.has(ariaLabel)) return "liked";
   if (ariaLabel === "Repost" || ariaLabel === "Repostar") return "other";
   if (testid === "like") return "like";
@@ -191,7 +191,7 @@ export function likeControlState({ testid = "", ariaLabel = "", pressed = "" } =
   return "other";
 }
 
-export function isReplyContext(text) {
+function isReplyContext(text) {
   const value = String(text ?? "");
   return /\breplying to\b/i.test(value) || /\brespondendo a\b/i.test(value);
 }
@@ -210,7 +210,7 @@ function articleStatusId(article) {
   return statusIdFromHref(href);
 }
 
-export function collectPosts(doc) {
+function collectPosts(doc) {
   return outermostTweets(doc).map((article) => ({
     id: articleStatusId(article),
     liked: [...article.querySelectorAll("button")].some((button) => controlState(button) === "liked"),
@@ -235,7 +235,7 @@ function scrollY(target, doc, windowRef) {
   return windowRef.scrollY || doc.scrollingElement?.scrollTop || 0;
 }
 
-export function boot(chromeApi = globalThis.chrome, doc = globalThis.document, windowRef = globalThis.window) {
+function boot(chromeApi = globalThis.chrome, doc = globalThis.document, windowRef = globalThis.window) {
   let lastY = scrollY("document", doc, windowRef);
   let armed = false;
   let armedBefore = 0;
@@ -329,6 +329,17 @@ export function boot(chromeApi = globalThis.chrome, doc = globalThis.document, w
   windowRef.addEventListener("focus", () => runner.onShow());
   return runner;
 }
+
+globalThis.XLikesContent = {
+  createSessionRunner,
+  statusIdFromHref,
+  isLoginEntryHref,
+  isLoginWallUrl,
+  likeControlState,
+  isReplyContext,
+  collectPosts,
+  boot,
+};
 
 if (typeof chrome !== "undefined" && chrome.runtime?.id) {
   boot();

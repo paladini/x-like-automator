@@ -1,15 +1,18 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { defaultSettings } from "../lib/policy.js";
-import {
+import "../lib/policy.js";
+import "../content/content.js";
+
+const { defaultSettings } = globalThis.XLikesPolicy;
+const {
   createSessionRunner,
   isLoginEntryHref,
   isLoginWallUrl,
   isReplyContext,
   likeControlState,
   statusIdFromHref,
-} from "../content/content.js";
+} = globalThis.XLikesContent;
 
 function harness(page) {
   const clicks = [];

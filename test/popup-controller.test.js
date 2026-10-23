@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { settingsErrorMessage } from "../lib/policy.js";
 import { createController } from "../popup/popup.js";
+
+const { settingsErrorMessage } = globalThis.XLikesPolicy;
 
 function field(value, checked = false) {
   const listeners = {};

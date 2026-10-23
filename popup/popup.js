@@ -1,11 +1,13 @@
-import {
+import "../lib/policy.js";
+
+const {
   SESSION_STORAGE_KEY,
   SETTINGS_STORAGE_KEY,
   defaultSettings,
   settingsErrorMessage,
   statusMessage,
   validateSettings,
-} from "../lib/policy.js";
+} = globalThis.XLikesPolicy;
 
 function isXUrl(url) {
   if (!url) return false;

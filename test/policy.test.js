@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
+import "../lib/policy.js";
+
+const {
   POPUP_FOCUS_GRACE_MS,
   SESSION_STORAGE_KEY,
   SETTINGS_STORAGE_KEY,
@@ -23,7 +25,7 @@ import {
   statusMessage,
   stopSession,
   validateSettings,
-} from "../lib/policy.js";
+} = globalThis.XLikesPolicy;
 
 function view(overrides = {}) {
   const session = overrides.session ?? startSession();
