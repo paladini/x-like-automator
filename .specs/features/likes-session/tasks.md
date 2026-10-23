@@ -131,15 +131,17 @@ T2 -> T3
 
 **Done when**:
 
-- [ ] `icons/icon.svg` is an original SVG and does not name another extension
-- [ ] PNG files exist at the four sizes and the manifest points at those PNGs
-- [ ] `node --test` passes
-- [ ] Test count is higher than before this task and none are skipped
+- [x] `icons/icon.svg` is an original SVG and does not name another extension
+- [x] PNG files exist at the four sizes and the manifest points at those PNGs
+- [x] `node --test` passes
+- [x] Test count is higher than before this task and none are skipped
 
 **Tests**: unit
 **Gate**: build
 
 **Commit**: `feat(icons): add the original toolbar icon`
+
+**Status**: Complete. Gate `node --test` at this task: icon tests passed. Suite is 84 after the following content task; icon tests were green before that task.
 
 ---
 
