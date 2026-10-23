@@ -6,6 +6,8 @@ const TWEET = [
   "article:has(button[data-testid='unlike'])",
   "article:has(button[aria-label='Like'])",
   "article:has(button[aria-label='Unlike'])",
+  "article:has(button[aria-label='Curtir'])",
+  "article:has(button[aria-label='Descurtir'])",
 ].join(", ");
 
 export function createSessionRunner({
@@ -177,12 +179,21 @@ export function isLoginWallUrl(href) {
   return isLoginEntryHref(href);
 }
 
+const NOT_YET_LIKED = new Set(["Like", "Curtir"]);
+const ALREADY_LIKED = new Set(["Unlike", "Descurtir"]);
+
 export function likeControlState({ testid = "", ariaLabel = "", pressed = "" } = {}) {
-  if (testid === "unlike" || ariaLabel === "Unlike") return "liked";
+  if (testid === "unlike" || ALREADY_LIKED.has(ariaLabel)) return "liked";
+  if (ariaLabel === "Repost" || ariaLabel === "Repostar") return "other";
   if (testid === "like") return "like";
-  if (ariaLabel === "Like" && pressed === "true") return "liked";
-  if (ariaLabel === "Like") return "like";
+  if (NOT_YET_LIKED.has(ariaLabel) && pressed === "true") return "liked";
+  if (NOT_YET_LIKED.has(ariaLabel)) return "like";
   return "other";
+}
+
+export function isReplyContext(text) {
+  const value = String(text ?? "");
+  return /\breplying to\b/i.test(value) || /\brespondendo a\b/i.test(value);
 }
 
 function controlState(button) {
@@ -203,7 +214,7 @@ export function collectPosts(doc) {
   return outermostTweets(doc).map((article) => ({
     id: articleStatusId(article),
     liked: [...article.querySelectorAll("button")].some((button) => controlState(button) === "liked"),
-    isReply: Boolean(article.querySelector("[data-testid='socialContext']")),
+    isReply: Boolean(article.querySelector("[data-testid='socialContext']")) || isReplyContext(article.innerText),
   }));
 }
 

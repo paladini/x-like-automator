@@ -6,6 +6,7 @@ import {
   createSessionRunner,
   isLoginEntryHref,
   isLoginWallUrl,
+  isReplyContext,
   likeControlState,
   statusIdFromHref,
 } from "../content/content.js";
@@ -158,6 +159,16 @@ test("a live Like button is the like control and a pressed one is already liked"
   assert.equal(likeControlState({ testid: "unlike", ariaLabel: "", pressed: "" }), "liked");
   assert.equal(likeControlState({ testid: "", ariaLabel: "Unlike", pressed: "true" }), "liked");
   assert.equal(likeControlState({ testid: "", ariaLabel: "Repost", pressed: "false" }), "other");
+  assert.equal(likeControlState({ testid: "", ariaLabel: "Curtir", pressed: "false" }), "like");
+  assert.equal(likeControlState({ testid: "", ariaLabel: "Curtir", pressed: "true" }), "liked");
+  assert.equal(likeControlState({ testid: "", ariaLabel: "Descurtir", pressed: "true" }), "liked");
+  assert.equal(likeControlState({ testid: "", ariaLabel: "Repostar", pressed: "false" }), "other");
+});
+
+test("reply context accepts Replying to and Respondendo a", () => {
+  assert.equal(isReplyContext("Replying to @reader"), true);
+  assert.equal(isReplyContext("Respondendo a @reader"), true);
+  assert.equal(isReplyContext("and for dessert, a little scroll"), false);
 });
 
 test("the content script does not touch cookies or an X API token", () => {
@@ -168,4 +179,6 @@ test("the content script does not touch cookies or an X API token", () => {
   assert.equal(source.includes("planTick"), true);
   assert.equal(source.includes("button[data-testid='like']"), true);
   assert.equal(source.includes("aria-label='Like'"), true);
+  assert.equal(source.includes("aria-label='Curtir'"), true);
+  assert.equal(source.includes("aria-label='Descurtir'"), true);
 });
