@@ -2,7 +2,13 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { defaultSettings } from "../lib/policy.js";
-import { createSessionRunner, statusIdFromHref } from "../content/content.js";
+import {
+  createSessionRunner,
+  isLoginEntryHref,
+  isLoginWallUrl,
+  likeControlState,
+  statusIdFromHref,
+} from "../content/content.js";
 
 function harness(page) {
   const clicks = [];
@@ -133,6 +139,27 @@ test("a status href yields that post id and not a shorter prefix", () => {
   assert.equal(statusIdFromHref("/home"), "");
 });
 
+test("the live sign-in href is a login wall entry", () => {
+  assert.equal(
+    isLoginEntryHref("/i/jf/onboarding/web?mode=login&redirect_after_login=%2F"),
+    true,
+  );
+  assert.equal(isLoginWallUrl("https://x.com/i/jf/onboarding/web?redirect_after_login=%2Fhome&mode=login"), true);
+  assert.equal(isLoginEntryHref("/login"), true);
+  assert.equal(isLoginEntryHref("/i/flow/login"), true);
+  assert.equal(isLoginEntryHref("/home"), false);
+  assert.equal(isLoginEntryHref("/X/status/2112722684710719913"), false);
+});
+
+test("a live Like button is the like control and a pressed one is already liked", () => {
+  assert.equal(likeControlState({ testid: "like", ariaLabel: "", pressed: "" }), "like");
+  assert.equal(likeControlState({ testid: "", ariaLabel: "Like", pressed: "false" }), "like");
+  assert.equal(likeControlState({ testid: "", ariaLabel: "Like", pressed: "true" }), "liked");
+  assert.equal(likeControlState({ testid: "unlike", ariaLabel: "", pressed: "" }), "liked");
+  assert.equal(likeControlState({ testid: "", ariaLabel: "Unlike", pressed: "true" }), "liked");
+  assert.equal(likeControlState({ testid: "", ariaLabel: "Repost", pressed: "false" }), "other");
+});
+
 test("the content script does not touch cookies or an X API token", () => {
   const source = readFileSync(new URL("../content/content.js", import.meta.url), "utf8");
   assert.equal(source.includes("chrome.cookies"), false);
@@ -140,4 +167,5 @@ test("the content script does not touch cookies or an X API token", () => {
   assert.equal(source.includes("api.x.com"), false);
   assert.equal(source.includes("planTick"), true);
   assert.equal(source.includes("button[data-testid='like']"), true);
+  assert.equal(source.includes("aria-label='Like'"), true);
 });

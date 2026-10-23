@@ -1,7 +1,12 @@
 import * as policy from "../lib/policy.js";
 
-const TWEET = "article[data-testid='tweet']";
-const LOGIN_ENTRY = "a[href='/login'], a[href='/i/flow/login'], [data-testid='loginButton'], [data-testid='signupButton']";
+const TWEET = [
+  "article[data-testid='tweet']",
+  "article:has(button[data-testid='like'])",
+  "article:has(button[data-testid='unlike'])",
+  "article:has(button[aria-label='Like'])",
+  "article:has(button[aria-label='Unlike'])",
+].join(", ");
 
 export function createSessionRunner({
   rules = policy,
@@ -156,6 +161,38 @@ export function statusIdFromHref(href) {
   return match ? match[1] : "";
 }
 
+export function isLoginEntryHref(href) {
+  if (!href) return false;
+  try {
+    const url = new URL(href, "https://x.com");
+    return url.pathname === "/login"
+      || url.pathname === "/i/flow/login"
+      || url.pathname === "/i/jf/onboarding/web";
+  } catch {
+    return false;
+  }
+}
+
+export function isLoginWallUrl(href) {
+  return isLoginEntryHref(href);
+}
+
+export function likeControlState({ testid = "", ariaLabel = "", pressed = "" } = {}) {
+  if (testid === "unlike" || ariaLabel === "Unlike") return "liked";
+  if (testid === "like") return "like";
+  if (ariaLabel === "Like" && pressed === "true") return "liked";
+  if (ariaLabel === "Like") return "like";
+  return "other";
+}
+
+function controlState(button) {
+  return likeControlState({
+    testid: button.getAttribute("data-testid") || "",
+    ariaLabel: button.getAttribute("aria-label") || "",
+    pressed: button.getAttribute("aria-pressed") || "",
+  });
+}
+
 function articleStatusId(article) {
   const timed = article.querySelector("a[href*='/status/'] time")?.closest("a");
   const href = (timed ?? article.querySelector("a[href*='/status/']"))?.getAttribute("href") ?? "";
@@ -165,14 +202,19 @@ function articleStatusId(article) {
 export function collectPosts(doc) {
   return outermostTweets(doc).map((article) => ({
     id: articleStatusId(article),
-    liked: Boolean(article.querySelector("button[data-testid='unlike']")),
+    liked: [...article.querySelectorAll("button")].some((button) => controlState(button) === "liked"),
     isReply: Boolean(article.querySelector("[data-testid='socialContext']")),
   }));
 }
 
-function loginWallVisible(doc) {
-  const entry = [...doc.querySelectorAll(LOGIN_ENTRY)].find(visible);
-  return Boolean(entry) && doc.querySelectorAll(TWEET).length === 0;
+function loginWallVisible(doc, href) {
+  if (doc.querySelectorAll(TWEET).length > 0) return false;
+  if (isLoginWallUrl(href)) return true;
+  return [...doc.querySelectorAll("a, [data-testid='loginButton'], [data-testid='signupButton']")].some((el) => {
+    const testid = el.getAttribute("data-testid");
+    if ((testid === "loginButton" || testid === "signupButton") && visible(el)) return true;
+    return isLoginEntryHref(el.getAttribute("href"));
+  });
 }
 
 function scrollY(target, doc, windowRef) {
@@ -205,7 +247,7 @@ export function boot(chromeApi = globalThis.chrome, doc = globalThis.document, w
         documentVisible: doc.visibilityState === "visible",
         windowFocused: doc.hasFocus(),
         tabActive: doc.visibilityState === "visible",
-        loginWall: loginWallVisible(doc),
+        loginWall: loginWallVisible(doc, windowRef.location.href),
         url: windowRef.location.href,
         posts,
         scroll: {
@@ -228,8 +270,9 @@ export function boot(chromeApi = globalThis.chrome, doc = globalThis.document, w
     clickLike: (postId) => {
       if (doc.visibilityState !== "visible") return false;
       const article = outermostTweets(doc).find((node) => articleStatusId(node) === String(postId));
-      const button = article?.querySelector("button[data-testid='like']");
-      if (!button || button.getAttribute("data-testid") !== "like") return false;
+      if (!article) return false;
+      const button = [...article.querySelectorAll("button")].find((node) => controlState(node) === "like");
+      if (!button) return false;
       button.click();
       return true;
     },
