@@ -9,7 +9,7 @@ Implement these tasks with the `tlc-spec-driven` skill: **activate it by name an
 ---
 
 **Design**: `.specs/features/likes-session/design.md`
-**Status**: Approved
+**Status**: Done
 
 Autonomous mode from the request: do not stop for gray areas. Eight tasks fit one batch, so Execute runs inline. MCP for every task: NONE. Skills: `tlc-spec-driven` for the cycle, and `frontend-design` while building the popup.
 
