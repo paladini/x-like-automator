@@ -205,18 +205,20 @@ T6 -> T7
 
 **Done when**:
 
-- [ ] `lang` is `pt-BR`
-- [ ] Interval, cap, and original-post controls have associated labels
-- [ ] Start and stop are `button` elements
-- [ ] The status region is `aria-live="polite"`
-- [ ] The count prefix "Curtidas nesta sessão:" is present
-- [ ] `node --test` passes
-- [ ] Test count is higher than before this task and none are skipped
+- [x] `lang` is `pt-BR`
+- [x] Interval, cap, and original-post controls have associated labels
+- [x] Start and stop are `button` elements
+- [x] The status region is `aria-live="polite"`
+- [x] The count prefix "Curtidas nesta sessão:" is present
+- [x] `node --test` passes
+- [x] Test count is higher than before this task and none are skipped
 
 **Tests**: unit
 **Gate**: quick
 
 **Commit**: `feat(popup): add the portuguese control document`
+
+**Status**: Complete. Gate `node --test`: 89 passed, 0 failed, 0 skipped.
 
 ---
 
