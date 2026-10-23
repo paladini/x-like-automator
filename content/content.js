@@ -204,7 +204,7 @@ export function boot(chromeApi = globalThis.chrome, doc = globalThis.document, w
       const snapshot = {
         documentVisible: doc.visibilityState === "visible",
         windowFocused: doc.hasFocus(),
-        tabActive: true,
+        tabActive: doc.visibilityState === "visible",
         loginWall: loginWallVisible(doc),
         url: windowRef.location.href,
         posts,

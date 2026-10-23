@@ -67,6 +67,15 @@ test("start on a visible home timeline clicks the selected post once", async () 
   assert.equal(runner.getSession().running, true);
 });
 
+test("an inactive tab does not click and keeps the count", async () => {
+  const { runner, clicks } = harness(homePage({ tabActive: false }));
+  await runner.start();
+  assert.deepEqual(clicks, []);
+  assert.equal(runner.getSession().likeCount, 0);
+  assert.equal(runner.getSession().status, "paused_inactive");
+  assert.equal(runner.getSession().running, true);
+});
+
 test("a hidden document does not click and keeps the count", async () => {
   const page = homePage();
   const { runner, clicks } = harness(page);

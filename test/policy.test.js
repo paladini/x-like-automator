@@ -157,8 +157,9 @@ test("an unfocused window pauses and keeps the count", () => {
   assert.equal(applyPlan(session, plan, defaultSettings()).likeCount, 2);
 });
 
-test("a background tab pauses", () => {
-  const plan = planTick(view({ tabActive: false }));
+test("a background tab pauses and keeps the count", () => {
+  const session = { ...startSession(), likeCount: 4, seenIds: ["10001"] };
+  const plan = planTick(view({ session, tabActive: false }));
   assert.equal(activityDecision({
     documentVisible: true,
     popupOpen: false,
@@ -166,6 +167,10 @@ test("a background tab pauses", () => {
     tabActive: false,
   }), "pause");
   assert.equal(plan.action, "pause");
+  const next = applyPlan(session, plan, defaultSettings());
+  assert.equal(next.likeCount, 4);
+  assert.deepEqual(next.seenIds, ["10001"]);
+  assert.equal(next.running, true);
 });
 
 test("an open popup keeps the session running while the document is visible", () => {
@@ -203,15 +208,20 @@ test("resume keeps the count and the seen ids", () => {
   assert.deepEqual(next.seenIds, ["10001", "10002"]);
 });
 
-test("home selects the first visible post that is not liked and not seen", () => {
-  const plan = planTick(view({
-    posts: [
-      { id: "10001", liked: true, isReply: false },
-      { id: "10002", liked: false, isReply: false },
-    ],
-  }));
-  assert.equal(plan.action, "like");
-  assert.equal(plan.postId, "10002");
+test("home, profile, and search select the first post that is not liked", () => {
+  const posts = [
+    { id: "10001", liked: true, isReply: false },
+    { id: "10002", liked: false, isReply: false },
+  ];
+  for (const url of [
+    "https://x.com/home",
+    "https://x.com/somereader",
+    "https://x.com/search?q=abc",
+  ]) {
+    const plan = planTick(view({ url, posts }));
+    assert.equal(plan.action, "like");
+    assert.equal(plan.postId, "10002");
+  }
 });
 
 test("a missing id is skipped", () => {
@@ -493,22 +503,39 @@ test("a reply thread with the toggle on likes the original", () => {
   assert.equal(plan.postId, "11111");
 });
 
-test("home does not skip a reply card when the toggle is off", () => {
+test("home, profile, and search do not skip a reply card when the toggle is off", () => {
+  const settings = { ...defaultSettings(), likeOriginalInReplyThread: false };
+  for (const url of [
+    "https://x.com/home",
+    "https://x.com/somereader",
+    "https://x.com/search?q=abc",
+  ]) {
+    const plan = planTick(view({
+      settings,
+      url,
+      posts: [{ id: "33333", liked: false, isReply: true }],
+    }));
+    assert.equal(plan.postId, "33333");
+  }
+});
+
+test("the original is the first post that is not a reply, even when a reply is above it", () => {
+  const posts = [
+    { id: "22222", liked: false, isReply: true },
+    { id: "11111", liked: false, isReply: false },
+    { id: "33333", liked: false, isReply: true },
+  ];
+  const marked = annotateThread(posts, "status");
+  assert.equal(marked[0].role, "reply");
+  assert.equal(marked[1].role, "original");
+  assert.equal(marked[2].role, "reply");
   const settings = { ...defaultSettings(), likeOriginalInReplyThread: false };
   const plan = planTick(view({
     settings,
-    posts: [{ id: "33333", liked: false, isReply: true }],
+    url: "https://x.com/somereader/status/11111",
+    posts,
   }));
-  assert.equal(plan.postId, "33333");
-});
-
-test("the original is the first post that is not a reply", () => {
-  const posts = annotateThread([
-    { id: "11111", liked: false, isReply: false },
-    { id: "22222", liked: false, isReply: true },
-  ], "status");
-  assert.equal(posts[0].role, "original");
-  assert.equal(posts[1].role, "reply");
+  assert.equal(plan.postId, "22222");
 });
 
 test("when every post is a reply the first one is the original", () => {
