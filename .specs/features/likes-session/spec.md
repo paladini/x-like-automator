@@ -254,11 +254,11 @@ Every ambiguity is resolved or recorded here. Nothing is left silently unclear. 
 
 | Requirement ID | Story | Phase | Status |
 | --- | --- | --- | --- |
-| LIKE-01 | P1: Like from the open X tab | Tasks | In Tasks |
-| LIKE-02 | P1: Pause when the tab is inactive | Tasks | In Tasks |
-| LIKE-03 | P1: Pick posts, pace them, and honor the cap | Tasks | In Tasks |
-| LIKE-04 | P1: Handle a reply thread | Tasks | In Tasks |
-| LIKE-05 | P1: Keep going when the feed stalls | Tasks | In Tasks |
+| LIKE-01 | P1: Like from the open X tab | Tasks | Implementing |
+| LIKE-02 | P1: Pause when the tab is inactive | Tasks | Implementing |
+| LIKE-03 | P1: Pick posts, pace them, and honor the cap | Tasks | Implementing |
+| LIKE-04 | P1: Handle a reply thread | Tasks | Implementing |
+| LIKE-05 | P1: Keep going when the feed stalls | Tasks | Implementing |
 | LIKE-06 | P1: Control it from a clear popup | Tasks | In Tasks |
 | LIKE-07 | P1: Load it unpacked and read the limits | Tasks | In Tasks |
 

@@ -67,14 +67,16 @@ T1
 
 **Done when**:
 
-- [ ] `node --test` passes
-- [ ] Selection, dedup, interval, cap, activity, scroll, surface, and status strings assert the spec values
-- [ ] Test count is at least 40 and none are skipped
+- [x] `node --test` passes
+- [x] Selection, dedup, interval, cap, activity, scroll, surface, and status strings assert the spec values
+- [x] Test count is at least 40 and none are skipped
 
 **Tests**: unit
 **Gate**: build
 
 **Commit**: `feat(policy): add pure like-session decisions`
+
+**Status**: Complete. Gate `node --test`: 71 passed, 0 failed, 0 skipped.
 
 ---
 
