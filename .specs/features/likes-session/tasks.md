@@ -141,7 +141,7 @@ T2 -> T3
 
 **Commit**: `feat(icons): add the original toolbar icon`
 
-**Status**: Complete. Gate `node --test` at this task: icon tests passed. Suite is 84 after the following content task; icon tests were green before that task.
+**Status**: Complete. Gate `node --test`: icon tests passed, 0 skipped.
 
 ---
 
@@ -166,18 +166,20 @@ T4
 
 **Done when**:
 
-- [ ] A start on a visible home fixture clicks the selected post id once
-- [ ] A hidden document does not click and keeps the count
-- [ ] A login wall does not click
-- [ ] Stop does not click
-- [ ] The file does not reference `chrome.cookies` or an API token
-- [ ] `node --test` passes
-- [ ] Test count is higher than before this task and none are skipped
+- [x] A start on a visible home fixture clicks the selected post id once
+- [x] A hidden document does not click and keeps the count
+- [x] A login wall does not click
+- [x] Stop does not click
+- [x] The file does not reference `chrome.cookies` or an API token
+- [x] `node --test` passes
+- [x] Test count is higher than before this task and none are skipped
 
 **Tests**: unit
 **Gate**: build
 
 **Commit**: `feat(content): like posts in the open X tab`
+
+**Status**: Complete. Gate `node --test`: 84 passed, 0 failed, 0 skipped.
 
 ---
 
