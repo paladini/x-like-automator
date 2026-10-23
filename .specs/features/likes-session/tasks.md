@@ -304,16 +304,18 @@ T8
 
 **Done when**:
 
-- [ ] README has a Portuguese section and an English section
-- [ ] README explains the open logged-in tab, unpacked load in Chrome, unpacked load in Brave, interval, cap, reply-original toggle, author Fernando Paladini, MIT, and the X rules note
-- [ ] LICENSE is MIT and names Fernando Paladini
-- [ ] `node --test` passes
-- [ ] Test count is higher than before this task and none are skipped
+- [x] README has a Portuguese section and an English section
+- [x] README explains the open logged-in tab, unpacked load in Chrome, unpacked load in Brave, interval, cap, reply-original toggle, author Fernando Paladini, MIT, and the X rules note
+- [x] LICENSE is MIT and names Fernando Paladini
+- [x] `node --test` passes
+- [x] Test count is higher than before this task and none are skipped
 
 **Tests**: unit
 **Gate**: build
 
 **Commit**: `docs(readme): explain install, settings, and limits`
+
+**Status**: Complete. Gate `node --test`: 100 passed, 0 failed, 0 skipped.
 
 ---
 
