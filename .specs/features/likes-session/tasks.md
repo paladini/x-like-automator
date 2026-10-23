@@ -101,16 +101,18 @@ T2 -> T3
 
 **Done when**:
 
-- [ ] Manifest version is 3
-- [ ] Content scripts match `https://x.com/*` and `https://twitter.com/*`
-- [ ] Permissions are storage only, with those two host permissions
-- [ ] `node --test` passes
-- [ ] Test count is higher than before this task and none are skipped
+- [x] Manifest version is 3
+- [x] Content scripts match `https://x.com/*` and `https://twitter.com/*`
+- [x] Permissions are storage only, with those two host permissions
+- [x] `node --test` passes
+- [x] Test count is higher than before this task and none are skipped
 
 **Tests**: unit
 **Gate**: quick
 
 **Commit**: `feat(manifest): register the unpacked mv3 extension`
+
+**Status**: Complete. Gate `node --test`: 76 passed, 0 failed, 0 skipped.
 
 ---
 
