@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { defaultSettings } from "../lib/policy.js";
-import { createSessionRunner } from "../content/content.js";
+import { createSessionRunner, statusIdFromHref } from "../content/content.js";
 
 function harness(page) {
   const clicks = [];
@@ -115,6 +115,13 @@ test("no eligible post asks the page to scroll", async () => {
   assert.deepEqual(clicks, []);
   assert.deepEqual(scrolls, ["document"]);
   assert.equal(runner.getSession().running, true);
+});
+
+test("a status href yields that post id and not a shorter prefix", () => {
+  assert.equal(statusIdFromHref("/reader/status/1234567890"), "1234567890");
+  assert.equal(statusIdFromHref("/reader/status/1234567890/photo/1"), "1234567890");
+  assert.notEqual(statusIdFromHref("/reader/status/1234567890"), "123456");
+  assert.equal(statusIdFromHref("/home"), "");
 });
 
 test("the content script does not touch cookies or an X API token", () => {

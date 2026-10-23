@@ -151,16 +151,23 @@ function outermostTweets(doc) {
   return [...doc.querySelectorAll(TWEET)].filter((article) => !article.parentElement?.closest(TWEET));
 }
 
+export function statusIdFromHref(href) {
+  const match = String(href ?? "").match(/\/status\/(\d+)/);
+  return match ? match[1] : "";
+}
+
+function articleStatusId(article) {
+  const timed = article.querySelector("a[href*='/status/'] time")?.closest("a");
+  const href = (timed ?? article.querySelector("a[href*='/status/']"))?.getAttribute("href") ?? "";
+  return statusIdFromHref(href);
+}
+
 export function collectPosts(doc) {
-  return outermostTweets(doc).map((article) => {
-    const href = article.querySelector("a[href*='/status/']")?.getAttribute("href") ?? "";
-    const match = href.match(/\/status\/(\d+)/);
-    return {
-      id: match ? match[1] : "",
-      liked: Boolean(article.querySelector("button[data-testid='unlike']")),
-      isReply: Boolean(article.querySelector("[data-testid='socialContext']")),
-    };
-  });
+  return outermostTweets(doc).map((article) => ({
+    id: articleStatusId(article),
+    liked: Boolean(article.querySelector("button[data-testid='unlike']")),
+    isReply: Boolean(article.querySelector("[data-testid='socialContext']")),
+  }));
 }
 
 function loginWallVisible(doc) {
@@ -220,10 +227,7 @@ export function boot(chromeApi = globalThis.chrome, doc = globalThis.document, w
     },
     clickLike: (postId) => {
       if (doc.visibilityState !== "visible") return false;
-      const article = outermostTweets(doc).find((node) => {
-        const href = node.querySelector("a[href*='/status/']")?.getAttribute("href") ?? "";
-        return href.includes(`/status/${postId}`);
-      });
+      const article = outermostTweets(doc).find((node) => articleStatusId(node) === String(postId));
       const button = article?.querySelector("button[data-testid='like']");
       if (!button || button.getAttribute("data-testid") !== "like") return false;
       button.click();
