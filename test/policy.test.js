@@ -17,6 +17,7 @@ const {
   likedPostScroll,
   chooseScrollTarget,
   classifySurface,
+  likeControlState,
   defaultSettings,
   nextDelayMs,
   planTick,
@@ -328,6 +329,49 @@ test("english clicks Repost and never Quote", () => {
     action: "escape",
     reason: "missing",
   });
+});
+
+test("spanish clicks Repostear and never Cita", () => {
+  assert.deepEqual(repostMenuChoice([
+    { text: "Repostear" },
+    { text: "Cita" },
+  ], "es"), { action: "click", text: "Repostear" });
+  assert.deepEqual(repostMenuChoice([{ text: "Cita" }], "es"), {
+    action: "escape",
+    reason: "missing",
+  });
+  assert.equal(repostControlState({ ariaLabel: "Deshacer repost", pressed: "false" }, "es"), "reposted");
+  assert.equal(repostControlState({ ariaLabel: "Repostear", pressed: "true" }, "es"), "reposted");
+  assert.deepEqual(repostMenuChoice([{ text: "Deshacer repost" }, { text: "Cita" }], "es"), {
+    action: "escape",
+    reason: "already-reposted",
+  });
+  assert.equal(likeControlState({ ariaLabel: "Me gusta", pressed: "false" }, "es"), "like");
+  assert.equal(likeControlState({ ariaLabel: "Cancelar Me gusta", pressed: "false" }, "es"), "liked");
+});
+
+test("every sourced language keeps plain repost apart from quote and undo", () => {
+  assert.equal(globalThis.XLikesLanguages.some((language) => language.id === "ur"), false);
+  for (const language of globalThis.XLikesLanguages) {
+    const repost = language.repost[0];
+    const quote = language.quote[0];
+    const undo = language.undoRepost[0];
+    assert.notEqual(repost, quote);
+    assert.notEqual(repost, undo);
+    assert.notEqual(language.like[0], language.unlike[0]);
+    assert.deepEqual(repostMenuChoice([
+      { text: repost },
+      { text: quote },
+    ], language.id), { action: "click", text: repost });
+    assert.deepEqual(repostMenuChoice([{ text: quote }], language.id), {
+      action: "escape",
+      reason: "missing",
+    });
+    assert.deepEqual(repostMenuChoice([{ text: undo }, { text: quote }], language.id), {
+      action: "escape",
+      reason: "already-reposted",
+    });
+  }
 });
 
 test("an already reposted post is not reposted again", () => {

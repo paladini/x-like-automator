@@ -63,7 +63,7 @@ you would, at a pace you configure.
 | **Auto-scroll and waiting** | When nothing eligible is visible, the extension scrolls the timeline to find more posts and, when it runs out, waits with exponential backoff (up to 30 s) for new posts. |
 | **Thread-aware** | Option to like (or skip) the original post in a reply thread. On the home timeline, a profile, and search, visible posts that are not liked yet are always eligible. |
 | **Plain repost, optional** | **Repostar também** is on by default. The extension clicks the repost icon, then only the plain menu item (share with no phrase). It never opens a composer and never types. Already-reposted posts are skipped. |
-| **Interface language** | The parser uses the language you pick. Default is Português (Brasil). English is included. A language is listed only when its real Like, Repost, and menu labels are known. |
+| **Interface language** | The parser uses the language you pick. Default is Português (Brasil). The popup lists every language whose Like, Unlike, Repost, Undo repost, and Quote labels were copied from X's locale bundles. |
 | **Hard refusal list** | Quote and comment composers, reply, follow, DM, login, and cookie collection stay refused. |
 | **Zero build, zero dependencies** | Plain JavaScript, loaded unpacked straight from the repository. The test suite runs on Node's built-in test runner. |
 
@@ -280,7 +280,7 @@ Invalid values are rejected with an inline error in the popup.
 | Limite de curtidas nesta sessão | Like cap for this session (used only when Unlimited is off) | integer | 1 – 1,000,000 | 100 |
 | Curtir o post original em uma thread de resposta | Like the original post in a reply thread | checkbox | on / off | **on** |
 | Repostar também | Also repost, using only the plain menu item | checkbox | on / off | **on** (also on when the setting is missing) |
-| Idioma da interface | Language the parser uses for Like and Repost labels | choice | Português (Brasil), English | Português (Brasil) |
+| Idioma da interface | Language the parser uses for Like and Repost labels | choice | languages copied from X's locale bundles | Português (Brasil) |
 
 Validation messages shown by the popup:
 

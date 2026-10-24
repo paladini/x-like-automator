@@ -63,7 +63,7 @@ você configurar.
 | **Rolagem e espera automáticas** | Quando não há post elegível à vista, a extensão rola a timeline atrás de novos posts e, quando acaba, espera com backoff exponencial (até 30 s). |
 | **Consciente de thread** | Opção de curtir (ou pular) o post original em uma thread de resposta. Na timeline, no perfil e na busca, os posts visíveis ainda não curtidos entram do mesmo jeito. |
 | **Repost simples, opcional** | **Repostar também** vem ligado. A extensão clica no ícone de repost e depois só no item simples do menu (compartilhar sem frase). Não abre compositor e não digita. Posts já repostados são pulados. |
-| **Idioma da interface** | O parser usa o idioma escolhido. O padrão é Português (Brasil). English entra na lista. Um idioma só aparece quando os rótulos reais de Curtir, Repostar e do menu são conhecidos. |
+| **Idioma da interface** | O parser usa o idioma escolhido. O padrão é Português (Brasil). O popup lista cada idioma cujos rótulos de Curtir, Descurtir, Repostar, desfazer repost e citar foram copiados dos pacotes de locale do X. |
 | **Lista de recusa rígida** | Compositor de comentário ou citação, resposta, seguir, DM, login e coleta de cookies continuam recusados. |
 | **Zero build, zero dependências** | JavaScript puro, carregado sem compactação direto do repositório. Os testes rodam no test runner nativo do Node. |
 
@@ -279,7 +279,7 @@ Valores inválidos são recusados com erro inline no popup.
 | Limite de curtidas nesta sessão (só vale com "sem limite" desligado) | inteiro | 1 – 1.000.000 | 100 |
 | Curtir o post original em uma thread de resposta | checkbox | ligado / desligado | **ligado** |
 | Repostar também | checkbox | ligado / desligado | **ligado** (também quando a opção não existe) |
-| Idioma da interface | escolha | Português (Brasil), English | Português (Brasil) |
+| Idioma da interface | escolha | idiomas copiados dos pacotes de locale do X | Português (Brasil) |
 
 Mensagens de validação mostradas pelo popup:
 
