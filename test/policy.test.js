@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import "../lib/ui-languages.js";
 import "../lib/policy.js";
 
 const {
@@ -25,6 +26,8 @@ const {
   startSession,
   statusMessage,
   popupView,
+  repostControlState,
+  repostMenuChoice,
   stopSession,
   validateSettings,
 } = globalThis.XLikesPolicy;
@@ -90,6 +93,8 @@ test("start sets a fresh session", () => {
     running: true,
     likeCount: 0,
     seenIds: [],
+    repostDoneIds: [],
+    pendingRepostId: null,
     stopReason: null,
     status: "running",
     backoffStep: 0,
@@ -214,7 +219,7 @@ test("resume keeps the count and the seen ids", () => {
 
 test("home, profile, and search select the first post that is not liked", () => {
   const posts = [
-    { id: "10001", liked: true, isReply: false },
+    { id: "10001", liked: true, reposted: true, isReply: false },
     { id: "10002", liked: false, isReply: false },
   ];
   for (const url of [
@@ -289,6 +294,50 @@ test("defaults are 5 seconds, cap off at 100, and original posts on", () => {
     capEnabled: false,
     cap: 100,
     likeOriginalInReplyThread: true,
+    alsoRepost: true,
+    interfaceLanguage: "pt-BR",
+  });
+});
+
+test("a missing repost switch stays on and a missing language is Brazilian Portuguese", () => {
+  const result = validateSettings({ intervalSeconds: 5, capEnabled: false });
+  assert.equal(result.ok, true);
+  assert.equal(result.settings.alsoRepost, true);
+  assert.equal(result.settings.interfaceLanguage, "pt-BR");
+  assert.equal(validateSettings({ intervalSeconds: 5, capEnabled: false, interfaceLanguage: "en" }).settings.interfaceLanguage, "en");
+  assert.equal(validateSettings({ intervalSeconds: 5, capEnabled: false, interfaceLanguage: "zz" }).settings.interfaceLanguage, "pt-BR");
+});
+
+test("pt-BR clicks Repostar and never Comentar", () => {
+  assert.deepEqual(repostMenuChoice([
+    { text: "Repostar" },
+    { text: "Comentar" },
+  ], "pt-BR"), { action: "click", text: "Repostar" });
+  assert.deepEqual(repostMenuChoice([{ text: "Comentar" }], "pt-BR"), {
+    action: "escape",
+    reason: "missing",
+  });
+});
+
+test("english clicks Repost and never Quote", () => {
+  assert.deepEqual(repostMenuChoice([
+    { text: "Repost" },
+    { text: "Quote" },
+  ], "en"), { action: "click", text: "Repost" });
+  assert.deepEqual(repostMenuChoice([{ text: "Quote" }], "en"), {
+    action: "escape",
+    reason: "missing",
+  });
+});
+
+test("an already reposted post is not reposted again", () => {
+  assert.equal(repostControlState({ ariaLabel: "Desfazer repost", pressed: "false" }, "pt-BR"), "reposted");
+  assert.equal(repostControlState({ ariaLabel: "Repostar", pressed: "true" }, "pt-BR"), "reposted");
+  assert.equal(repostControlState({ ariaLabel: "Undo repost", pressed: "false" }, "en"), "reposted");
+  assert.equal(repostControlState({ ariaLabel: "Repost", pressed: "true" }, "en"), "reposted");
+  assert.deepEqual(repostMenuChoice([{ text: "Desfazer repost" }, { text: "Comentar" }], "pt-BR"), {
+    action: "escape",
+    reason: "already-reposted",
   });
 });
 
@@ -571,7 +620,7 @@ test("no eligible post and no movement asks for a scroll", () => {
   });
   assert.equal(decision.action, "scroll");
   const plan = planTick(view({
-    posts: [{ id: "10001", liked: true, isReply: false }],
+    posts: [{ id: "10001", liked: true, reposted: true, isReply: false }],
     scroll: {
       attemptedScroll: false,
       beforeScrollY: 10,

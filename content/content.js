@@ -1,20 +1,23 @@
 const policy = globalThis.XLikesPolicy;
 
-const TWEET = [
-  "article[data-testid='tweet']",
-  "article:has(button[data-testid='like'])",
-  "article:has(button[data-testid='unlike'])",
-  "article:has(button[aria-label='Like'])",
-  "article:has(button[aria-label='Unlike'])",
-  "article:has(button[aria-label='Curtir'])",
-  "article:has(button[aria-label='Descurtir'])",
-].join(", ");
+function tweetSelector(languageId) {
+  const pack = policy.interfacePack(languageId);
+  const labels = [...(pack?.like || []), ...(pack?.unlike || [])];
+  return [
+    "article[data-testid='tweet']",
+    "article:has(button[data-testid='like'])",
+    "article:has(button[data-testid='unlike'])",
+    ...labels.map((label) => `article:has(button[aria-label='${label}'])`),
+  ].join(", ");
+}
 
 function createSessionRunner({
   rules = policy,
   getSettings,
   readSnapshot,
   clickLike,
+  openRepost = () => false,
+  confirmRepost = () => "missing",
   scrollBy,
   publish,
   schedule,
@@ -62,7 +65,7 @@ function createSessionRunner({
 
   async function tick() {
     const settings = await getSettings();
-    const page = await readSnapshot();
+    const page = await readSnapshot(settings);
     const plan = rules.planTick({
       session,
       settings,
@@ -86,6 +89,10 @@ function createSessionRunner({
         waitMs: 2000,
         nextBackoffStep: session.backoffStep,
       };
+    } else if (plan.action === "repost-open" && openRepost(plan.postId) === false) {
+      performed = { ...plan, action: "repost-confirm" };
+    } else if (plan.action === "repost-confirm") {
+      confirmRepost(plan.postId);
     } else if (plan.action === "scroll") {
       scrollBy(plan.scrollTarget);
     }
@@ -154,8 +161,9 @@ function visible(element) {
   return rect.width > 0 && rect.height > 0;
 }
 
-function outermostTweets(doc) {
-  return [...doc.querySelectorAll(TWEET)].filter((article) => !article.parentElement?.closest(TWEET));
+function outermostTweets(doc, languageId) {
+  const selector = tweetSelector(languageId);
+  return [...doc.querySelectorAll(selector)].filter((article) => !article.parentElement?.closest("article"));
 }
 
 function statusIdFromHref(href) {
@@ -179,16 +187,8 @@ function isLoginWallUrl(href) {
   return isLoginEntryHref(href);
 }
 
-const NOT_YET_LIKED = new Set(["Like", "Curtir"]);
-const ALREADY_LIKED = new Set(["Unlike", "Descurtir"]);
-
-function likeControlState({ testid = "", ariaLabel = "", pressed = "" } = {}) {
-  if (testid === "unlike" || ALREADY_LIKED.has(ariaLabel)) return "liked";
-  if (ariaLabel === "Repost" || ariaLabel === "Repostar") return "other";
-  if (testid === "like") return "like";
-  if (NOT_YET_LIKED.has(ariaLabel) && pressed === "true") return "liked";
-  if (NOT_YET_LIKED.has(ariaLabel)) return "like";
-  return "other";
+function likeControlState(attrs, languageId = "pt-BR") {
+  return policy.likeControlState(attrs, languageId);
 }
 
 function isReplyContext(text) {
@@ -196,12 +196,19 @@ function isReplyContext(text) {
   return /\breplying to\b/i.test(value) || /\brespondendo a\b/i.test(value);
 }
 
-function controlState(button) {
+function controlState(button, languageId) {
   return likeControlState({
     testid: button.getAttribute("data-testid") || "",
     ariaLabel: button.getAttribute("aria-label") || "",
     pressed: button.getAttribute("aria-pressed") || "",
-  });
+  }, languageId);
+}
+
+function repostState(button, languageId) {
+  return policy.repostControlState({
+    ariaLabel: button.getAttribute("aria-label") || "",
+    pressed: button.getAttribute("aria-pressed") || "",
+  }, languageId);
 }
 
 function articleStatusId(article) {
@@ -210,16 +217,17 @@ function articleStatusId(article) {
   return statusIdFromHref(href);
 }
 
-function collectPosts(doc) {
-  return outermostTweets(doc).map((article) => ({
+function collectPosts(doc, languageId = "pt-BR") {
+  return outermostTweets(doc, languageId).map((article) => ({
     id: articleStatusId(article),
-    liked: [...article.querySelectorAll("button")].some((button) => controlState(button) === "liked"),
+    liked: [...article.querySelectorAll("button")].some((button) => controlState(button, languageId) === "liked"),
+    reposted: [...article.querySelectorAll("button")].some((button) => repostState(button, languageId) === "reposted"),
     isReply: Boolean(article.querySelector("[data-testid='socialContext']")) || isReplyContext(article.innerText),
   }));
 }
 
-function loginWallVisible(doc, href) {
-  if (doc.querySelectorAll(TWEET).length > 0) return false;
+function loginWallVisible(doc, href, languageId = "pt-BR") {
+  if (doc.querySelectorAll(tweetSelector(languageId)).length > 0) return false;
   if (isLoginWallUrl(href)) return true;
   return [...doc.querySelectorAll("a, [data-testid='loginButton'], [data-testid='signupButton']")].some((el) => {
     const testid = el.getAttribute("data-testid");
@@ -241,6 +249,35 @@ function boot(chromeApi = globalThis.chrome, doc = globalThis.document, windowRe
   let armedBefore = 0;
   let armedTarget = "document";
   let previousIds = [];
+  let interfaceLanguage = "pt-BR";
+
+  function revealPost(article) {
+    const rect = article.getBoundingClientRect();
+    const reveal = policy.likedPostScroll({
+      role: "post",
+      top: rect.top,
+      bottom: rect.bottom,
+      viewportHeight: windowRef.innerHeight,
+    });
+    if (reveal.action === "scroll" && reveal.element === "post") {
+      article.scrollIntoView({ behavior: reveal.behavior, block: reveal.block });
+    }
+  }
+
+  function articleFor(postId) {
+    return outermostTweets(doc, interfaceLanguage).find((node) => articleStatusId(node) === String(postId));
+  }
+
+  function closeRepostMenu() {
+    doc.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true }));
+  }
+
+  function menuItems() {
+    return [...doc.querySelectorAll("[role='menuitem'], [role='menu'] button, [role='menu'] [role='button']")].map((el) => ({
+      text: (el.innerText || el.getAttribute("aria-label") || "").replace(/\s+/g, " ").trim(),
+      el,
+    })).filter((item) => item.text);
+  }
 
   const runner = createSessionRunner({
     getSettings: async () => {
@@ -249,8 +286,9 @@ function boot(chromeApi = globalThis.chrome, doc = globalThis.document, windowRe
       const validated = policy.validateSettings(raw);
       return validated.ok ? validated.settings : policy.defaultSettings();
     },
-    readSnapshot: () => {
-      const posts = collectPosts(doc);
+    readSnapshot: (settings) => {
+      interfaceLanguage = settings?.interfaceLanguage || "pt-BR";
+      const posts = collectPosts(doc, interfaceLanguage);
       const column = doc.querySelector("[data-testid='primaryColumn']");
       const root = doc.scrollingElement || doc.documentElement;
       const after = scrollY(armed ? armedTarget : "document", doc, windowRef);
@@ -258,7 +296,7 @@ function boot(chromeApi = globalThis.chrome, doc = globalThis.document, windowRe
         documentVisible: doc.visibilityState === "visible",
         windowFocused: doc.hasFocus(),
         tabActive: doc.visibilityState === "visible",
-        loginWall: loginWallVisible(doc, windowRef.location.href),
+        loginWall: loginWallVisible(doc, windowRef.location.href, interfaceLanguage),
         url: windowRef.location.href,
         posts,
         scroll: {
@@ -280,22 +318,35 @@ function boot(chromeApi = globalThis.chrome, doc = globalThis.document, windowRe
     },
     clickLike: (postId) => {
       if (doc.visibilityState !== "visible") return false;
-      const article = outermostTweets(doc).find((node) => articleStatusId(node) === String(postId));
+      const article = articleFor(postId);
       if (!article) return false;
-      const button = [...article.querySelectorAll("button")].find((node) => controlState(node) === "like");
+      const button = [...article.querySelectorAll("button")].find((node) => controlState(node, interfaceLanguage) === "like");
       if (!button) return false;
-      const rect = article.getBoundingClientRect();
-      const reveal = policy.likedPostScroll({
-        role: "post",
-        top: rect.top,
-        bottom: rect.bottom,
-        viewportHeight: windowRef.innerHeight,
-      });
-      if (reveal.action === "scroll" && reveal.element === "post") {
-        article.scrollIntoView({ behavior: reveal.behavior, block: reveal.block });
-      }
+      revealPost(article);
       button.click();
       return true;
+    },
+    openRepost: (postId) => {
+      if (doc.visibilityState !== "visible") return false;
+      const article = articleFor(postId);
+      if (!article) return false;
+      const button = [...article.querySelectorAll("button")].find((node) => repostState(node, interfaceLanguage) === "repost");
+      if (!button) return false;
+      revealPost(article);
+      button.click();
+      return true;
+    },
+    confirmRepost: () => {
+      const choice = policy.repostMenuChoice(menuItems(), interfaceLanguage);
+      if (choice.action === "click") {
+        const item = menuItems().find((entry) => entry.text === choice.text);
+        if (item) {
+          item.el.click();
+          return "done";
+        }
+      }
+      closeRepostMenu();
+      return "skipped";
     },
     scrollBy: (target) => {
       const delta = Math.max(240, Math.floor(windowRef.innerHeight * 0.8));

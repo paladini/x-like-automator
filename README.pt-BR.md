@@ -55,15 +55,16 @@ você configurar.
 
 | | |
 |---|---|
-| **Curtir só o que é elegível** | Posts visíveis que ainda não foram curtidos. Posts já curtidos nunca são tocados, e um post nunca é curtido duas vezes na mesma sessão. |
+| **Curtir só o que é elegível** | Posts visíveis que ainda não foram curtidos. Um post nunca é curtido duas vezes na mesma sessão. |
 | **Roda na sua aba aberta** | Usa a aba do X que você já deixou aberta e na qual você já entrou. Sem fluxo de login, sem credenciais, sem token de API. |
 | **Ilimitado por padrão** | A sessão não tem um teto fixo de 30 curtidas. O padrão é sem limite, até você parar. Dá para ligar um limite opcional nas configurações (1 a 1.000.000). |
 | **Ritmo humano** | As curtidas são espaçadas pelo intervalo configurado (1 a 60 segundos) com uma variação pequena aleatória, sempre dentro do intervalo escolhido. |
 | **Pausa automática imediata** | Se a aba ficar oculta ou a janela perder o foco, a curtida para na hora. Quando a aba volta, a mesma sessão continua, com a mesma contagem. |
 | **Rolagem e espera automáticas** | Quando não há post elegível à vista, a extensão rola a timeline atrás de novos posts e, quando acaba, espera com backoff exponencial (até 30 s). |
 | **Consciente de thread** | Opção de curtir (ou pular) o post original em uma thread de resposta. Na timeline, no perfil e na busca, os posts visíveis ainda não curtidos entram do mesmo jeito. |
-| **Compatível com interface EN/PT** | Detecta o estado do botão de curtida em inglês (`Like` / `Unlike`) e em português (`Curtir` / `Descurtir`), independente do idioma do seu X. |
-| **Lista de recusa rígida** | A camada de política só permite a ação `like`. Repostar, responder, seguir, DM, login e coleta de cookies são recusados estruturalmente — a extensão não vira outra coisa por configuração. |
+| **Repost simples, opcional** | **Repostar também** vem ligado. A extensão clica no ícone de repost e depois só no item simples do menu (compartilhar sem frase). Não abre compositor e não digita. Posts já repostados são pulados. |
+| **Idioma da interface** | O parser usa o idioma escolhido. O padrão é Português (Brasil). English entra na lista. Um idioma só aparece quando os rótulos reais de Curtir, Repostar e do menu são conhecidos. |
+| **Lista de recusa rígida** | Compositor de comentário ou citação, resposta, seguir, DM, login e coleta de cookies continuam recusados. |
 | **Zero build, zero dependências** | JavaScript puro, carregado sem compactação direto do repositório. Os testes rodam no test runner nativo do Node. |
 
 O popup em si é em português do Brasil (`pt-BR`); todos os rótulos estão traduzidos na
@@ -227,7 +228,10 @@ post visível ainda não curtido é elegível.
 
 O status muda para **"Curtindo"**. A extensão percorre os posts visíveis na ordem da
 página, clicando Curtir só nos posts ainda não curtidos, no ritmo configurado. Um post
-já tratado na sessão nunca é curtido de novo, mesmo se você rolar para cima.
+já tratado na sessão nunca é curtido de novo, mesmo se você rolar para cima. Com
+**Repostar também** ligado, o mesmo intervalo separa o clique no ícone de repost e o
+clique só no item simples do menu. O post entra na tela antes de cada um desses
+cliques. Se o item simples não estiver no menu, o menu fecha e aquele post é pulado.
 
 Se a aba ativa não for do X, Iniciar mostra **"Abra uma aba do X para iniciar."** e
 nada mais acontece.
@@ -274,6 +278,8 @@ Valores inválidos são recusados com erro inline no popup.
 | Sem limite de curtidas | checkbox | ligado / desligado | **ligado** |
 | Limite de curtidas nesta sessão (só vale com "sem limite" desligado) | inteiro | 1 – 1.000.000 | 100 |
 | Curtir o post original em uma thread de resposta | checkbox | ligado / desligado | **ligado** |
+| Repostar também | checkbox | ligado / desligado | **ligado** (também quando a opção não existe) |
+| Idioma da interface | escolha | Português (Brasil), English | Português (Brasil) |
 
 Mensagens de validação mostradas pelo popup:
 
@@ -355,7 +361,7 @@ O que ela **nunca** faz:
 - ❌ Não lê nem escreve cookies, não vê senhas, não vê tokens de sessão, não usa chave da API do X.
 - ❌ Não faz requisições de rede próprias — nada de `fetch`/XHR, analytics ou telemetria. Todo estado fica em `chrome.storage`.
 - ❌ Não toca em outros sites. O content script só é injetado em `x.com` e `twitter.com`.
-- ❌ Não executa ações inseguras, por construção. A política expõe uma lista de recusa (`repost`, `reply`, `follow`, `dm`, `login`, `collect_cookies`) e `allowedAction()` só retorna `true` para `"like"`.
+- ❌ Não abre compositor, não cita, não responde, não segue, não manda DM, não faz login e não coleta cookies. O repost simples é o único clique extra, e só o item do menu que compartilha o post sem frase.
 
 ---
 

@@ -123,6 +123,7 @@ label {
   line-height: 1.35;
 }
 
+select,
 input[type="number"] {
   width: 100%;
   padding: 8px 10px;

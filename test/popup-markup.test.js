@@ -1,3 +1,4 @@
+import "../lib/ui-languages.js";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
@@ -25,6 +26,16 @@ test("start and stop are buttons", () => {
 
 test("the status region is a polite live region", () => {
   assert.match(html, /id="status"[^>]*aria-live="polite"/);
+});
+
+test("the popup lists the sourced interface languages and the repost switch", () => {
+  assert.match(html, /<label[^>]*for="also-repost"/);
+  assert.equal(html.includes("Repostar também"), true);
+  assert.match(html, /<label[^>]*for="interface-language"/);
+  for (const language of globalThis.XLikesLanguages) {
+    assert.equal(html.includes(`value="${language.id}"`), true);
+    assert.equal(html.includes(language.label), true);
+  }
 });
 
 test("the count line uses the session prefix", () => {

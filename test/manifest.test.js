@@ -13,7 +13,11 @@ test("content scripts run on x.com and twitter.com", () => {
     "https://x.com/*",
     "https://twitter.com/*",
   ]);
-  assert.deepEqual(manifest.content_scripts[0].js, ["lib/policy.js", "content/content.js"]);
+  assert.deepEqual(manifest.content_scripts[0].js, [
+    "lib/ui-languages.js",
+    "lib/policy.js",
+    "content/content.js",
+  ]);
 });
 
 test("an x.com content script with a bare import must be loaded as a module", () => {

@@ -34,6 +34,8 @@ function harness({ url = "https://x.com/home", session, local } = {}) {
     unlimited: field("", true),
     cap: field(100),
     likeOriginal: field("", true),
+    alsoRepost: field("", true),
+    language: field("pt-BR"),
     start: field(""),
     stop: field(""),
     error: field(""),
@@ -91,6 +93,8 @@ test("a valid form saves the validated settings", async () => {
       capEnabled: false,
       cap: 100,
       likeOriginalInReplyThread: true,
+      alsoRepost: true,
+      interfaceLanguage: "pt-BR",
     },
   }]);
 });

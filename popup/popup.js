@@ -1,3 +1,4 @@
+import "../lib/ui-languages.js";
 import "../lib/policy.js";
 
 const {
@@ -26,6 +27,8 @@ function readForm(elements) {
     capEnabled: elements.unlimited.checked !== true,
     cap: capEmpty ? "" : elements.cap.valueAsNumber,
     likeOriginalInReplyThread: elements.likeOriginal.checked === true,
+    alsoRepost: elements.alsoRepost.checked === true,
+    interfaceLanguage: elements.language.value,
   };
 }
 
@@ -37,6 +40,8 @@ function paintSettings(elements, settings) {
   elements.cap.valueAsNumber = settings.cap;
   elements.cap.disabled = settings.capEnabled !== true;
   elements.likeOriginal.checked = settings.likeOriginalInReplyThread !== false;
+  elements.alsoRepost.checked = settings.alsoRepost !== false;
+  elements.language.value = settings.interfaceLanguage || "pt-BR";
 }
 
 function paintSession(elements, session) {
@@ -132,6 +137,8 @@ export function boot(chromeApi = globalThis.chrome, doc = globalThis.document) {
     unlimited: doc.getElementById("unlimited"),
     cap: doc.getElementById("cap"),
     likeOriginal: doc.getElementById("like-original"),
+    alsoRepost: doc.getElementById("also-repost"),
+    language: doc.getElementById("interface-language"),
     start: doc.getElementById("start"),
     stop: doc.getElementById("stop"),
     error: doc.getElementById("form-error"),

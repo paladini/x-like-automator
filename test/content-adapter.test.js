@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import "../lib/ui-languages.js";
 import "../lib/policy.js";
 import "../content/content.js";
 
@@ -121,7 +122,7 @@ test("stop does not click again", async () => {
 
 test("no eligible post asks the page to scroll", async () => {
   const { runner, clicks, scrolls } = harness(homePage({
-    posts: [{ id: "10001", liked: true, isReply: false }],
+    posts: [{ id: "10001", liked: true, reposted: true, isReply: false }],
     scroll: {
       attemptedScroll: false,
       beforeScrollY: 10,
@@ -157,14 +158,14 @@ test("the live sign-in href is a login wall entry", () => {
 
 test("a live Like button is the like control and a pressed one is already liked", () => {
   assert.equal(likeControlState({ testid: "like", ariaLabel: "", pressed: "" }), "like");
-  assert.equal(likeControlState({ testid: "", ariaLabel: "Like", pressed: "false" }), "like");
-  assert.equal(likeControlState({ testid: "", ariaLabel: "Like", pressed: "true" }), "liked");
-  assert.equal(likeControlState({ testid: "unlike", ariaLabel: "", pressed: "" }), "liked");
-  assert.equal(likeControlState({ testid: "", ariaLabel: "Unlike", pressed: "true" }), "liked");
+  assert.equal(likeControlState({ testid: "", ariaLabel: "Like", pressed: "false" }, "en"), "like");
+  assert.equal(likeControlState({ testid: "", ariaLabel: "Like", pressed: "true" }, "en"), "liked");
+  assert.equal(likeControlState({ testid: "unlike", ariaLabel: "", pressed: "" }, "en"), "liked");
+  assert.equal(likeControlState({ testid: "", ariaLabel: "Unlike", pressed: "true" }, "en"), "liked");
   assert.equal(likeControlState({ testid: "", ariaLabel: "Repost", pressed: "false" }), "other");
-  assert.equal(likeControlState({ testid: "", ariaLabel: "Curtir", pressed: "false" }), "like");
-  assert.equal(likeControlState({ testid: "", ariaLabel: "Curtir", pressed: "true" }), "liked");
-  assert.equal(likeControlState({ testid: "", ariaLabel: "Descurtir", pressed: "true" }), "liked");
+  assert.equal(likeControlState({ testid: "", ariaLabel: "Curtir", pressed: "false" }, "pt-BR"), "like");
+  assert.equal(likeControlState({ testid: "", ariaLabel: "Curtir", pressed: "true" }, "pt-BR"), "liked");
+  assert.equal(likeControlState({ testid: "", ariaLabel: "Descurtir", pressed: "true" }, "pt-BR"), "liked");
   assert.equal(likeControlState({ testid: "", ariaLabel: "Repostar", pressed: "false" }), "other");
 });
 
@@ -181,7 +182,9 @@ test("the content script does not touch cookies or an X API token", () => {
   assert.equal(source.includes("api.x.com"), false);
   assert.equal(source.includes("planTick"), true);
   assert.equal(source.includes("button[data-testid='like']"), true);
-  assert.equal(source.includes("aria-label='Like'"), true);
-  assert.equal(source.includes("aria-label='Curtir'"), true);
-  assert.equal(source.includes("aria-label='Descurtir'"), true);
+  const labels = readFileSync(new URL("../lib/ui-languages.js", import.meta.url), "utf8");
+  assert.equal(labels.includes("Curtir"), true);
+  assert.equal(labels.includes("Repostar"), true);
+  assert.equal(labels.includes("Comentar"), true);
+  assert.equal(labels.includes("Quote"), true);
 });

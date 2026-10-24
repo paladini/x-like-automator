@@ -55,15 +55,16 @@ you would, at a pace you configure.
 
 | | |
 |---|---|
-| **Likes only what is eligible** | Visible posts that are not liked yet. Already-liked posts are never touched, and a post is never liked twice in the same session. |
+| **Likes only what is eligible** | Visible posts that are not liked yet. A post is never liked twice in the same session. |
 | **Runs in your open tab** | Uses the X tab you already have open and where you are already logged in. No login flows, no credentials, no API tokens. |
 | **Unlimited by default** | There is no hardcoded cap of 30 likes. The default session is unlimited until you stop it. You can turn on an optional cap in settings (1 – 1,000,000). |
 | **Human-like pacing** | Likes are spaced by your configured interval (1 – 60 seconds) with a small randomized jitter that always stays inside the interval you chose. |
 | **Instant auto-pause** | If the tab is hidden or the window loses focus, liking pauses immediately. When the tab is active again, the same session resumes and the count stays. |
 | **Auto-scroll and waiting** | When nothing eligible is visible, the extension scrolls the timeline to find more posts and, when it runs out, waits with exponential backoff (up to 30 s) for new posts. |
 | **Thread-aware** | Option to like (or skip) the original post in a reply thread. On the home timeline, a profile, and search, visible posts that are not liked yet are always eligible. |
-| **EN / PT UI compatible** | Detects Like button states in both English (`Like` / `Unlike`) and Portuguese (`Curtir` / `Descurtir`), regardless of your X language. |
-| **Hard refusal list** | The policy layer only allows the `like` action. Repost, reply, follow, DM, login and cookie collection are structurally refused — the extension cannot be "extended" into them by configuration. |
+| **Plain repost, optional** | **Repostar também** is on by default. The extension clicks the repost icon, then only the plain menu item (share with no phrase). It never opens a composer and never types. Already-reposted posts are skipped. |
+| **Interface language** | The parser uses the language you pick. Default is Português (Brasil). English is included. A language is listed only when its real Like, Repost, and menu labels are known. |
+| **Hard refusal list** | Quote and comment composers, reply, follow, DM, login, and cookie collection stay refused. |
 | **Zero build, zero dependencies** | Plain JavaScript, loaded unpacked straight from the repository. The test suite runs on Node's built-in test runner. |
 
 The popup UI itself is in Brazilian Portuguese (`pt-BR`); every label is translated
@@ -193,7 +194,7 @@ Click the pinned *X Likes Automator* toolbar icon. The popup shows:
 
 - the current **status** (initially `Parado` — "Stopped"),
 - the **like count** for the current session,
-- the four settings described in the [reference below](#settings-reference).
+- the settings described in the [reference below](#settings-reference).
 
 > Opening the popup does **not** pause a running session. The extension knows the
 > popup is open and keeps working while you watch the counter.
@@ -228,7 +229,10 @@ visible, not-yet-liked post is eligible.
 The popup status changes to **"Curtindo"** ("Liking"). The extension now walks the
 visible posts in page order, clicking Like only on posts that are not liked yet, with
 your configured pacing. A post it has already handled is never re-liked in the same
-session, even if you scroll back up.
+session, even if you scroll back up. When **Repostar também** is on, the same interval
+then separates a second pair of clicks on that post: the repost icon, then only the
+plain menu item. The post is scrolled into view before each of those clicks. If the
+plain item is missing, the menu is closed and that post is skipped.
 
 If the active tab is not an X tab, pressing Start shows **"Abra uma aba do X para
 iniciar."** ("Open an X tab to start.") — nothing else happens.
@@ -275,6 +279,8 @@ Invalid values are rejected with an inline error in the popup.
 | Sem limite de curtidas | Unlimited likes | checkbox | on / off | **on** |
 | Limite de curtidas nesta sessão | Like cap for this session (used only when Unlimited is off) | integer | 1 – 1,000,000 | 100 |
 | Curtir o post original em uma thread de resposta | Like the original post in a reply thread | checkbox | on / off | **on** |
+| Repostar também | Also repost, using only the plain menu item | checkbox | on / off | **on** (also on when the setting is missing) |
+| Idioma da interface | Language the parser uses for Like and Repost labels | choice | Português (Brasil), English | Português (Brasil) |
 
 Validation messages shown by the popup:
 
@@ -360,9 +366,8 @@ What it **never** does:
 - ❌ No network requests of its own — it performs no `fetch`/XHR, sends analytics, or
   phones home. All state stays in `chrome.storage`.
 - ❌ No other sites. The content script only injects on `x.com` and `twitter.com`.
-- ❌ No unsafe actions, by design. The policy layer exposes a refusal set (`repost`,
-  `reply`, `follow`, `dm`, `login`, `collect_cookies`) and `allowedAction()` only ever
-  returns `true` for `"like"`.
+- ❌ No composer, quote, reply, follow, DM, login, or cookie collection. Plain repost
+  is the only extra click, and only the menu item that shares the post with no phrase.
 
 ---
 
