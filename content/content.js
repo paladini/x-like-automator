@@ -74,6 +74,7 @@ function createSessionRunner({
       windowFocused: page.windowFocused,
       tabActive: page.tabActive,
       loginWall: page.loginWall,
+      automationNotice: page.automationNotice,
       url: page.url,
       posts: page.posts,
       randomUnit: randomUnit(),
@@ -243,6 +244,40 @@ function scrollY(target, doc, windowRef) {
   return windowRef.scrollY || doc.scrollingElement?.scrollTop || 0;
 }
 
+function menuItemText(el) {
+  return (el.innerText || el.getAttribute("aria-label") || "").replace(/\s+/g, " ").trim();
+}
+
+function repostMenuElements(doc) {
+  const roots = [...doc.querySelectorAll("[role='menu'], [data-testid='Dropdown'], [data-testid='sheetDialog']")];
+  const items = [];
+  for (const root of roots) {
+    const nodes = [...root.querySelectorAll("[role='menuitem'], [role='button'], button, a")];
+    for (const el of nodes) {
+      const text = menuItemText(el);
+      if (!text) continue;
+      const innerMatch = [...el.querySelectorAll("[role='menuitem'], [role='button'], button, a")]
+        .some((child) => menuItemText(child) === text);
+      if (innerMatch) continue;
+      items.push({ text, el });
+    }
+  }
+  return items;
+}
+
+function confirmPlainRepost(doc, languageId, closeMenu = () => {}) {
+  const choice = policy.repostMenuChoice(repostMenuElements(doc), languageId);
+  if (choice.action === "click") {
+    const item = repostMenuElements(doc).find((entry) => entry.text === choice.text);
+    if (item) {
+      item.el.click();
+      return "done";
+    }
+  }
+  closeMenu();
+  return "skipped";
+}
+
 function boot(chromeApi = globalThis.chrome, doc = globalThis.document, windowRef = globalThis.window) {
   let lastY = scrollY("document", doc, windowRef);
   let armed = false;
@@ -272,13 +307,6 @@ function boot(chromeApi = globalThis.chrome, doc = globalThis.document, windowRe
     doc.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true }));
   }
 
-  function menuItems() {
-    return [...doc.querySelectorAll("[role='menuitem'], [role='menu'] button, [role='menu'] [role='button']")].map((el) => ({
-      text: (el.innerText || el.getAttribute("aria-label") || "").replace(/\s+/g, " ").trim(),
-      el,
-    })).filter((item) => item.text);
-  }
-
   const runner = createSessionRunner({
     getSettings: async () => {
       const stored = await chromeApi.storage.local.get(policy.SETTINGS_STORAGE_KEY);
@@ -297,6 +325,7 @@ function boot(chromeApi = globalThis.chrome, doc = globalThis.document, windowRe
         windowFocused: doc.hasFocus(),
         tabActive: doc.visibilityState === "visible",
         loginWall: loginWallVisible(doc, windowRef.location.href, interfaceLanguage),
+        automationNotice: policy.automationNoticeVisible(doc.body?.innerText || ""),
         url: windowRef.location.href,
         posts,
         scroll: {
@@ -330,24 +359,13 @@ function boot(chromeApi = globalThis.chrome, doc = globalThis.document, windowRe
       if (doc.visibilityState !== "visible") return false;
       const article = articleFor(postId);
       if (!article) return false;
-      const button = [...article.querySelectorAll("button")].find((node) => repostState(node, interfaceLanguage) === "repost");
+      const button = [...article.querySelectorAll("button, [role='button']")].find((node) => repostState(node, interfaceLanguage) === "repost");
       if (!button) return false;
       revealPost(article);
       button.click();
       return true;
     },
-    confirmRepost: () => {
-      const choice = policy.repostMenuChoice(menuItems(), interfaceLanguage);
-      if (choice.action === "click") {
-        const item = menuItems().find((entry) => entry.text === choice.text);
-        if (item) {
-          item.el.click();
-          return "done";
-        }
-      }
-      closeRepostMenu();
-      return "skipped";
-    },
+    confirmRepost: () => confirmPlainRepost(doc, interfaceLanguage, closeRepostMenu),
     scrollBy: (target) => {
       const delta = Math.max(240, Math.floor(windowRef.innerHeight * 0.8));
       armedTarget = target === "column" ? "column" : "document";
@@ -408,6 +426,8 @@ globalThis.XLikesContent = {
   likeControlState,
   isReplyContext,
   collectPosts,
+  repostMenuElements,
+  confirmPlainRepost,
   boot,
 };
 

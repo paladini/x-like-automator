@@ -528,6 +528,30 @@ test("status sentences are exact", () => {
   assert.equal(statusMessage("not_logged_in"), "Entre no X nesta aba para começar");
   assert.equal(statusMessage("cap_reached"), "Limite da sessão atingido");
   assert.equal(statusMessage("unsupported_page"), "Esta página do X não entra na curtida automática");
+  assert.equal(statusMessage("automation_wait"), "O X pediu para esperar. A sessão continua daqui a pouco.");
+});
+
+test("an automation notice waits and then the session continues", () => {
+  const { AUTOMATION_WAIT_MS, automationNoticeVisible } = globalThis.XLikesPolicy;
+  const notice = "Esta solicitação parece ser automatizada. Para proteger nossos usuários contra spam e outras atividades maliciosas, não poderemos concluir esta ação agora. Tente novamente mais tarde.";
+  assert.equal(automationNoticeVisible(notice), true);
+  assert.equal(AUTOMATION_WAIT_MS, 60000);
+  const session = { ...startSession(), pendingRepostId: "10001", likeCount: 3 };
+  const waiting = planTick(view({ automationNotice: true, session }));
+  assert.equal(waiting.action, "wait_automation");
+  assert.equal(waiting.status, "automation_wait");
+  assert.equal(waiting.waitMs, 60000);
+  assert.equal(waiting.postId, undefined);
+  const paused = applyPlan(session, waiting, defaultSettings());
+  assert.equal(paused.running, true);
+  assert.equal(paused.likeCount, 3);
+  assert.equal(paused.pendingRepostId, "10001");
+  assert.equal(popupView(paused).action, "stop");
+  const again = planTick(view({
+    automationNotice: false,
+    session: { ...paused, status: "running", pendingRepostId: null },
+  }));
+  assert.equal(again.action, "like");
 });
 
 test("home and search paths classify", () => {

@@ -44,6 +44,7 @@ você configurar.
 - [Comportamentos que você deve conhecer](#comportamentos-que-você-deve-conhecer)
 - [Privacidade e segurança](#privacidade-e-segurança)
 - [Solução de problemas](#solução-de-problemas)
+- [Perguntas frequentes](#perguntas-frequentes)
 - [Desenvolvimento](#desenvolvimento)
 - [Contribuindo](#contribuindo)
 - [Aviso — regras do X](#aviso--regras-do-x)
@@ -376,7 +377,20 @@ O que ela **nunca** faz:
 | `Pausado: a aba do X não está ativa` permanente | A aba do X não é a aba visível/focada. | Clique na aba do X. A sessão retoma com a mesma contagem. |
 | `Esta página do X não entra na curtida automática` | Você navegou para explore/notificações/mensagens/configurações ou outro site. | Volte para home, busca, perfil ou thread. |
 | Você editou o código e parece defasado | Extensões sem compactação guardam o script antigo nas abas já abertas. | Recarregue a extensão em `chrome://extensions` e **depois** recarregue a aba do X. |
-| O X está num terceiro idioma e nada é curtido | A detecção do `aria-label` do botão cobre hoje inglês e português. | Troque o idioma do X para inglês ou português brasileiro, ou abra uma issue com o texto que você vê. |
+| O X está num idioma que o popup não lista | O parser só conhece os rótulos copiados dos pacotes de locale do X. | Escolha esse idioma em **Idioma da interface**, ou abra uma issue com o texto que você vê. |
+| *"Esta solicitação parece ser automatizada…"* | O X recusou este clique por agora e pediu para tentar de novo mais tarde. | Não precisa fazer mais nada. A extensão pausa, espera um minuto e retoma a mesma sessão. A espera não muda a conta. |
+
+---
+
+## Perguntas frequentes
+
+### O X disse que a solicitação parece automatizada. Aconteceu alguma coisa com a conta?
+
+Não. Esta mensagem é normal:
+
+> Esta solicitação parece ser automatizada. Para proteger nossos usuários contra spam e outras atividades maliciosas, não poderemos concluir esta ação agora. Tente novamente mais tarde.
+
+O X está pedindo uma pausa. A extensão para de clicar, espera um minuto e depois continua a mesma sessão. Esperar é o comportamento inteiro. A extensão não tenta esconder que está automatizando, e a espera não muda a conta.
 
 ---
 

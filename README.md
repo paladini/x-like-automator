@@ -44,6 +44,7 @@ you would, at a pace you configure.
 - [Behavior you should know](#behavior-you-should-know)
 - [Privacy and security](#privacy-and-security)
 - [Troubleshooting](#troubleshooting)
+- [FAQ](#faq)
 - [Development](#development)
 - [Contributing](#contributing)
 - [Disclaimer — X's rules](#disclaimer--x-rules)
@@ -382,7 +383,20 @@ What it **never** does:
 | `Pausado: a aba do X não está ativa` forever | The X tab is not the visible/focused one. | Click the X tab. The session resumes with the same count. |
 | `Esta página do X não entra na curtida automática` | You navigated to explore/notifications/messages/settings or another site. | Navigate back to home, search, a profile, or a thread. |
 | You edited the extension code and it feels stale | Unpacked extensions cache the old script in already-open tabs. | Reload the extension at `chrome://extensions`, **then** reload the X tab. |
-| X is shown in a third language and nothing is liked | Like-button `aria-label` detection currently covers English and Portuguese. | Switch X to English or Brazilian Portuguese, or open an issue with the label text you see. |
+| X is shown in a language the popup does not list | The parser only knows labels copied from X's locale bundles. | Pick that language in **Idioma da interface**, or open an issue with the label text you see. |
+| *"Esta solicitação parece ser automatizada…"* | X refused this click for now and asked you to try again later. | Nothing else is required. The extension pauses, waits one minute, and resumes the same session. The account is not changed by that wait. |
+
+---
+
+## FAQ
+
+### X says the request looks automated. Did something happen to the account?
+
+No. This message is normal:
+
+> Esta solicitação parece ser automatizada. Para proteger nossos usuários contra spam e outras atividades maliciosas, não poderemos concluir esta ação agora. Tente novamente mais tarde.
+
+X is asking for a pause. The extension stops clicking, waits one minute, and then continues the same session. Waiting is the whole behavior. The extension does not try to hide that it is automating, and the wait does not change the account.
 
 ---
 
