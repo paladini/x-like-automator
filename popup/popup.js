@@ -1,6 +1,3 @@
-import "../lib/ui-languages.js";
-import "../lib/policy.js";
-
 const {
   SESSION_STORAGE_KEY,
   SETTINGS_STORAGE_KEY,
@@ -101,7 +98,7 @@ async function rememberSession(storage, session) {
   }
 }
 
-export async function createController({ storage, tabs, elements }) {
+async function createController({ storage, tabs, elements }) {
   try {
     const stored = await storage.local.get(SETTINGS_STORAGE_KEY);
     const validated = validateSettings(stored[SETTINGS_STORAGE_KEY] ?? defaultSettings());
@@ -180,7 +177,7 @@ export async function createController({ storage, tabs, elements }) {
   };
 }
 
-export function boot(chromeApi = globalThis.chrome, doc = globalThis.document) {
+function boot(chromeApi = globalThis.chrome, doc = globalThis.document) {
   const elements = {
     status: doc.getElementById("status"),
     count: doc.getElementById("count"),
@@ -204,6 +201,8 @@ export function boot(chromeApi = globalThis.chrome, doc = globalThis.document) {
   });
   return controller;
 }
+
+globalThis.XLikesPopup = { createController, boot };
 
 if (typeof chrome !== "undefined" && chrome.runtime?.id && typeof document !== "undefined") {
   boot();

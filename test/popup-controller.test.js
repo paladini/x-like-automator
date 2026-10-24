@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createController } from "../popup/popup.js";
+import "../lib/ui-languages.js";
+import "../lib/policy.js";
+import "../popup/popup.js";
+
+const { createController } = globalThis.XLikesPopup;
 
 const { settingsErrorMessage } = globalThis.XLikesPolicy;
 

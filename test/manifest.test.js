@@ -20,18 +20,34 @@ test("content scripts run on x.com and twitter.com", () => {
   ]);
 });
 
-test("an x.com content script with a bare import must be loaded as a module", () => {
-  const script = manifest.content_scripts.find((entry) =>
-    (entry.matches || []).some((match) => match.includes("x.com")),
-  );
-  assert.ok(script);
-  const sources = script.js.map((file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8"));
-  const bareModuleSyntax = sources.some((source) => /^\s*(import|export)\s/m.test(source));
-  if (bareModuleSyntax) {
-    assert.equal(script.type, "module");
-  } else {
-    assert.notEqual(script.type, "module");
+test("classic content and popup scripts do not use import or export", () => {
+  const moduleSyntax = /^\s*(import|export)\s/m;
+  const popupHtml = readFileSync(new URL("../popup/popup.html", import.meta.url), "utf8");
+  const classicFiles = [];
+
+  for (const entry of manifest.content_scripts || []) {
+    if (entry.type === "module") continue;
+    for (const file of entry.js || []) classicFiles.push(file);
   }
+
+  for (const match of popupHtml.matchAll(/<script\b([^>]*)>/gi)) {
+    const attrs = match[1];
+    if (/\btype\s*=\s*["']module["']/i.test(attrs)) continue;
+    const src = attrs.match(/\bsrc\s*=\s*["']([^"']+)["']/i);
+    if (!src) continue;
+    const relative = src[1].startsWith("../") ? src[1].slice(3) : `popup/${src[1]}`;
+    classicFiles.push(relative);
+  }
+
+  assert.ok(classicFiles.length > 0);
+  for (const file of classicFiles) {
+    const source = readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
+    assert.equal(moduleSyntax.test(source), false, file);
+  }
+  assert.equal(popupHtml.includes("runtime.sendMessage"), false);
+  const popupSource = readFileSync(new URL("../popup/popup.js", import.meta.url), "utf8");
+  assert.equal(popupSource.includes("runtime.sendMessage"), false);
+  assert.equal(popupSource.includes("tabsApi.sendMessage"), true);
 });
 
 test("permissions are storage only", () => {
