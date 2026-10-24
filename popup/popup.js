@@ -67,16 +67,17 @@ async function activeTab(tabs) {
 }
 
 async function tell(tabsApi, tab, type) {
-  if (!tab || !isXUrl(tab.url)) return { ok: false, reason: "not-x" };
+  if (!tab || !isXUrl(tab.url)) return { ok: false, reason: "not-x", session: null };
   try {
-    await tabsApi.sendMessage(tab.id, { type });
-    return { ok: true };
+    const session = await tabsApi.sendMessage(tab.id, { type });
+    return { ok: true, reason: null, session };
   } catch {
-    return { ok: false, reason: "no-receiver" };
+    return { ok: false, reason: "no-receiver", session: null };
   }
 }
 
 function showDeliveryProblem(elements, reason) {
+  elements.error.textContent = "";
   applyView(elements, {
     action: "start",
     status: reason === "not-x" ? NOT_X_STATUS : RELOAD_STATUS,
@@ -84,13 +85,32 @@ function showDeliveryProblem(elements, reason) {
   });
 }
 
-export async function createController({ storage, tabs, elements }) {
-  const stored = await storage.local.get(SETTINGS_STORAGE_KEY);
-  const validated = validateSettings(stored[SETTINGS_STORAGE_KEY] ?? defaultSettings());
-  paintSettings(elements, validated.ok ? validated.settings : defaultSettings());
+function isSession(value) {
+  return Boolean(value)
+    && typeof value === "object"
+    && typeof value.status === "string"
+    && typeof value.running === "boolean";
+}
 
-  const sessionStored = await storage.session.get(SESSION_STORAGE_KEY);
-  paintSession(elements, sessionStored[SESSION_STORAGE_KEY]);
+async function rememberSession(storage, session) {
+  if (typeof storage.session?.set !== "function") return;
+  try {
+    await storage.session.set({ [SESSION_STORAGE_KEY]: session });
+  } catch {
+    // The status already shows the reply from the page.
+  }
+}
+
+export async function createController({ storage, tabs, elements }) {
+  try {
+    const stored = await storage.local.get(SETTINGS_STORAGE_KEY);
+    const validated = validateSettings(stored[SETTINGS_STORAGE_KEY] ?? defaultSettings());
+    paintSettings(elements, validated.ok ? validated.settings : defaultSettings());
+    const sessionStored = await storage.session.get(SESSION_STORAGE_KEY);
+    paintSession(elements, sessionStored[SESSION_STORAGE_KEY]);
+  } catch {
+    showDeliveryProblem(elements, "no-receiver");
+  }
 
   storage.onChanged.addListener((changes, area) => {
     if (area !== "session" || !changes[SESSION_STORAGE_KEY]) return;
@@ -101,6 +121,35 @@ export async function createController({ storage, tabs, elements }) {
     elements.cap.disabled = elements.unlimited.checked === true;
   });
 
+  let epoch = 0;
+
+  async function deliver(type, { required = false, requireRunning = false } = {}) {
+    const mine = ++epoch;
+    let delivery;
+    try {
+      delivery = await tell(tabs, await activeTab(tabs), type);
+    } catch {
+      delivery = { ok: false, reason: "no-receiver", session: null };
+    }
+    if (mine !== epoch) return;
+    const showNotX = required && delivery.reason === "not-x";
+    const showMiss = delivery.reason === "no-receiver" || (required && !isSession(delivery.session));
+    if (!delivery.ok && (delivery.reason === "no-receiver" || showNotX)) {
+      showDeliveryProblem(elements, delivery.reason);
+      return;
+    }
+    if (!isSession(delivery.session)) {
+      if (showMiss) showDeliveryProblem(elements, "no-receiver");
+      return;
+    }
+    if (requireRunning && delivery.session.running !== true) {
+      showDeliveryProblem(elements, "no-receiver");
+      return;
+    }
+    paintSession(elements, delivery.session);
+    await rememberSession(storage, delivery.session);
+  }
+
   elements.start.addEventListener("click", async () => {
     const result = validateSettings(readForm(elements));
     if (!result.ok) {
@@ -108,18 +157,20 @@ export async function createController({ storage, tabs, elements }) {
       return;
     }
     elements.error.textContent = "";
-    await storage.local.set({ [SETTINGS_STORAGE_KEY]: result.settings });
-    const started = await tell(tabs, await activeTab(tabs), "start");
-    if (!started.ok) showDeliveryProblem(elements, started.reason);
+    try {
+      await storage.local.set({ [SETTINGS_STORAGE_KEY]: result.settings });
+    } catch {
+      showDeliveryProblem(elements, "no-receiver");
+      return;
+    }
+    await deliver("start", { required: true, requireRunning: true });
   });
 
   elements.stop.addEventListener("click", async () => {
-    const stopped = await tell(tabs, await activeTab(tabs), "stop");
-    if (!stopped.ok) showDeliveryProblem(elements, stopped.reason);
+    await deliver("stop", { required: true });
   });
 
-  const opened = await tell(tabs, await activeTab(tabs), "popup-open");
-  if (!opened.ok && opened.reason === "no-receiver") showDeliveryProblem(elements, opened.reason);
+  await deliver("popup-open");
 
   return {
     async close() {

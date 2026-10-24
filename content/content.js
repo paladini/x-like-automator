@@ -360,7 +360,14 @@ function boot(chromeApi = globalThis.chrome, doc = globalThis.document, windowRe
       }
     },
     publish: (session) => {
-      chromeApi.storage.session.set({ [policy.SESSION_STORAGE_KEY]: session });
+      try {
+        const area = chromeApi.storage?.session;
+        if (!area || typeof area.set !== "function") return;
+        const pending = area.set({ [policy.SESSION_STORAGE_KEY]: session });
+        if (pending && typeof pending.catch === "function") pending.catch(() => {});
+      } catch {
+        // The start reply still carries the session when session storage is closed.
+      }
     },
     schedule: (ms, fn) => windowRef.setTimeout(fn, ms),
     cancel: (id) => windowRef.clearTimeout(id),
@@ -369,17 +376,19 @@ function boot(chromeApi = globalThis.chrome, doc = globalThis.document, windowRe
 
   chromeApi.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (!message || typeof message.type !== "string") return;
-    if (message.type === "popup-open") runner.onPopup(true);
-    if (message.type === "popup-close") runner.onPopup(false);
-    if (message.type === "start") {
-      runner.start();
+    try {
+      if (message.type === "popup-open") runner.onPopup(true);
+      else if (message.type === "popup-close") runner.onPopup(false);
+      else if (message.type === "start") {
+        const pending = runner.start();
+        if (pending && typeof pending.catch === "function") pending.catch(() => {});
+      }
+      else if (message.type === "stop") runner.stop();
+      else if (message.type !== "get-status") return;
       sendResponse(runner.getSession());
+    } catch {
+      sendResponse(null);
     }
-    if (message.type === "stop") {
-      runner.stop();
-      sendResponse(runner.getSession());
-    }
-    if (message.type === "get-status") sendResponse(runner.getSession());
   });
 
   doc.addEventListener("visibilitychange", () => {

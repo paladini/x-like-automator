@@ -111,12 +111,33 @@ test("start on a non-X tab sends no start message", async () => {
 
 test("start on an X tab sends start through tabs.sendMessage", async () => {
   const { elements, storage, tabs, messages } = harness({ url: "https://x.com/home" });
+  tabs.sendMessage = async (tabId, message) => {
+    messages.push({ tabId, message });
+    if (message.type === "start") {
+      return { running: true, status: "running", likeCount: 0, stopReason: null };
+    }
+    return undefined;
+  };
   await createController({ storage, tabs, elements });
   await elements.start.click();
   assert.deepEqual(
     messages.filter((entry) => entry.message.type === "start"),
     [{ tabId: 7, message: { type: "start" } }],
   );
+  assert.equal(elements.status.textContent, "Curtindo");
+  assert.equal(elements.status.dataset.tone, "live");
+  assert.equal(elements.start.hidden, true);
+  assert.equal(elements.stop.hidden, false);
+});
+
+test("a start reply with no session replaces Parado", async () => {
+  const { elements, storage, tabs } = harness({ url: "https://x.com/home" });
+  await createController({ storage, tabs, elements });
+  assert.equal(elements.status.textContent, "Parado");
+  await elements.start.click();
+  assert.equal(elements.status.textContent, "Recarregue a aba do X e toque em Iniciar de novo.");
+  assert.equal(elements.start.hidden, false);
+  assert.equal(elements.stop.hidden, true);
 });
 
 test("a synchronous send failure stays caught and asks for a reload", async () => {
