@@ -24,6 +24,7 @@ const {
   settingsErrorMessage,
   startSession,
   statusMessage,
+  popupView,
   stopSession,
   validateSettings,
 } = globalThis.XLikesPolicy;
@@ -582,6 +583,40 @@ test("no eligible post and no movement asks for a scroll", () => {
   assert.equal(plan.action, "scroll");
   assert.equal(plan.status, "running");
   assert.equal(plan.scrollTarget, "document");
+});
+
+test("the popup shows one action for each session state", () => {
+  assert.deepEqual(popupView(null), { action: "start", status: "Parado", tone: "idle" });
+  assert.deepEqual(popupView({ status: "stopped", running: false }), {
+    action: "start",
+    status: "Parado",
+    tone: "idle",
+  });
+  assert.deepEqual(popupView({ status: "running", running: true }), {
+    action: "stop",
+    status: "Curtindo",
+    tone: "live",
+  });
+  assert.deepEqual(popupView({ status: "paused_inactive", running: true }), {
+    action: "stop",
+    status: "Pausado",
+    tone: "paused",
+  });
+  assert.deepEqual(popupView({ status: "waiting_for_posts", running: true }), {
+    action: "stop",
+    status: "Aguardando novos posts",
+    tone: "waiting",
+  });
+  assert.deepEqual(popupView({ status: "cap_reached", running: false }), {
+    action: "start",
+    status: "Limite da sessão atingido",
+    tone: "idle",
+  });
+  assert.deepEqual(popupView({ status: "not_logged_in", running: true }), {
+    action: "stop",
+    status: "Entre no X nesta aba para começar",
+    tone: "waiting",
+  });
 });
 
 test("a fully visible post is not scrolled", () => {

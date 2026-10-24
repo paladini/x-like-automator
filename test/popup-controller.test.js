@@ -8,6 +8,8 @@ function field(value, checked = false) {
   const listeners = {};
   return {
     textContent: "",
+    hidden: false,
+    dataset: {},
     value: value === "" ? "" : String(value),
     valueAsNumber: value === "" ? Number.NaN : Number(value),
     checked,
@@ -99,6 +101,8 @@ test("start on a non-X tab sends no start message", async () => {
   await elements.start.click();
   assert.equal(messages.some((entry) => entry.message.type === "start"), false);
   assert.equal(elements.status.textContent, "Abra uma aba do X para iniciar.");
+  assert.equal(elements.start.hidden, false);
+  assert.equal(elements.stop.hidden, true);
 });
 
 test("start on an X tab sends start through tabs.sendMessage", async () => {
@@ -119,6 +123,8 @@ test("a synchronous send failure stays caught and asks for a reload", async () =
   await createController({ storage, tabs, elements });
   await elements.start.click();
   assert.equal(elements.status.textContent, "Recarregue a aba do X e toque em Iniciar de novo.");
+  assert.equal(elements.start.hidden, false);
+  assert.equal(elements.stop.hidden, true);
 });
 
 test("a content script that does not answer asks for a reload", async () => {
@@ -135,12 +141,18 @@ test("the status node shows the spec sentence and the count prefix", async () =>
     session: { status: "paused_inactive", likeCount: 4 },
   });
   await createController({ storage, tabs, elements });
-  assert.equal(elements.status.textContent, "Pausado: a aba do X não está ativa");
+  assert.equal(elements.status.textContent, "Pausado");
+  assert.equal(elements.status.dataset.tone, "paused");
+  assert.equal(elements.start.hidden, true);
+  assert.equal(elements.stop.hidden, false);
   assert.equal(elements.count.textContent, "Curtidas nesta sessão: 4");
 
   listeners[0]({
-    session: { newValue: { status: "running", likeCount: 5 } },
+    session: { newValue: { status: "running", running: true, likeCount: 5 } },
   }, "session");
   assert.equal(elements.status.textContent, "Curtindo");
+  assert.equal(elements.status.dataset.tone, "live");
+  assert.equal(elements.start.hidden, true);
+  assert.equal(elements.stop.hidden, false);
   assert.equal(elements.count.textContent, "Curtidas nesta sessão: 5");
 });

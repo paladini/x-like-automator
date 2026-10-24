@@ -5,7 +5,7 @@ const {
   SETTINGS_STORAGE_KEY,
   defaultSettings,
   settingsErrorMessage,
-  statusMessage,
+  popupView,
   validateSettings,
 } = globalThis.XLikesPolicy;
 
@@ -40,10 +40,17 @@ function paintSettings(elements, settings) {
 }
 
 function paintSession(elements, session) {
-  const status = session?.status ?? "stopped";
+  const view = popupView(session);
+  applyView(elements, view);
   const likeCount = Number.isInteger(session?.likeCount) ? session.likeCount : 0;
-  elements.status.textContent = statusMessage(status);
   elements.count.textContent = `Curtidas nesta sessão: ${likeCount}`;
+}
+
+function applyView(elements, view) {
+  elements.status.textContent = view.status;
+  elements.status.dataset.tone = view.tone;
+  elements.start.hidden = view.action !== "start";
+  elements.stop.hidden = view.action !== "stop";
 }
 
 const NOT_X_STATUS = "Abra uma aba do X para iniciar.";
@@ -65,7 +72,11 @@ async function tell(tabsApi, tab, type) {
 }
 
 function showDeliveryProblem(elements, reason) {
-  elements.status.textContent = reason === "not-x" ? NOT_X_STATUS : RELOAD_STATUS;
+  applyView(elements, {
+    action: "start",
+    status: reason === "not-x" ? NOT_X_STATUS : RELOAD_STATUS,
+    tone: "idle",
+  });
 }
 
 export async function createController({ storage, tabs, elements }) {
