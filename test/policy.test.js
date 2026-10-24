@@ -13,6 +13,7 @@ const {
   blurPauseDelayMs,
   canStart,
   capDecision,
+  likedPostScroll,
   chooseScrollTarget,
   classifySurface,
   defaultSettings,
@@ -581,6 +582,52 @@ test("no eligible post and no movement asks for a scroll", () => {
   assert.equal(plan.action, "scroll");
   assert.equal(plan.status, "running");
   assert.equal(plan.scrollTarget, "document");
+});
+
+test("a fully visible post is not scrolled", () => {
+  assert.deepEqual(likedPostScroll({ role: "post", top: 40, bottom: 400, viewportHeight: 800 }), {
+    action: "none",
+    element: "post",
+  });
+  assert.deepEqual(likedPostScroll({ role: "post", top: 0, bottom: 800, viewportHeight: 800 }), {
+    action: "none",
+    element: "post",
+  });
+});
+
+test("the liked post is the element scrolled, not the like or repost button", () => {
+  assert.deepEqual(likedPostScroll({ role: "like", top: 900, bottom: 940, viewportHeight: 800 }), {
+    action: "none",
+    element: null,
+  });
+  assert.deepEqual(likedPostScroll({ role: "repost", top: 900, bottom: 940, viewportHeight: 800 }), {
+    action: "none",
+    element: null,
+  });
+});
+
+test("a post that fits is centered smoothly when it is not fully visible", () => {
+  assert.deepEqual(likedPostScroll({ role: "post", top: 700, bottom: 980, viewportHeight: 800 }), {
+    action: "scroll",
+    element: "post",
+    block: "center",
+    behavior: "smooth",
+  });
+  assert.deepEqual(likedPostScroll({ role: "post", top: -120, bottom: 200, viewportHeight: 800 }), {
+    action: "scroll",
+    element: "post",
+    block: "center",
+    behavior: "smooth",
+  });
+});
+
+test("a post taller than the screen stays on screen without centering", () => {
+  assert.deepEqual(likedPostScroll({ role: "post", top: -40, bottom: 1600, viewportHeight: 800 }), {
+    action: "scroll",
+    element: "post",
+    block: "nearest",
+    behavior: "smooth",
+  });
 });
 
 test("a scrollable document is the scroll target", () => {

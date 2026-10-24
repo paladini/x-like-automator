@@ -284,6 +284,16 @@ function boot(chromeApi = globalThis.chrome, doc = globalThis.document, windowRe
       if (!article) return false;
       const button = [...article.querySelectorAll("button")].find((node) => controlState(node) === "like");
       if (!button) return false;
+      const rect = article.getBoundingClientRect();
+      const reveal = policy.likedPostScroll({
+        role: "post",
+        top: rect.top,
+        bottom: rect.bottom,
+        viewportHeight: windowRef.innerHeight,
+      });
+      if (reveal.action === "scroll" && reveal.element === "post") {
+        article.scrollIntoView({ behavior: reveal.behavior, block: reveal.block });
+      }
       button.click();
       return true;
     },
