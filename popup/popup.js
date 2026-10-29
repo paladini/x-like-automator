@@ -1,3 +1,6 @@
+// Wrapped in an IIFE: classic scripts share one global lexical scope, so
+// top-level names here must not collide with lib/policy.js.
+(function () {
 const {
   SESSION_STORAGE_KEY,
   SETTINGS_STORAGE_KEY,
@@ -49,10 +52,24 @@ function paintSession(elements, session) {
 }
 
 function applyView(elements, view) {
+  const running = view.action === "stop";
   elements.status.textContent = view.status;
   elements.status.dataset.tone = view.tone;
-  elements.start.hidden = view.action !== "start";
-  elements.stop.hidden = view.action !== "stop";
+  elements.start.hidden = running;
+  elements.stop.hidden = !running;
+  elements.stop.dataset.state = view.tone === "live" ? "running" : "idle";
+  elements.start.setAttribute?.("aria-pressed", "false");
+  elements.stop.setAttribute?.("aria-pressed", running ? "true" : "false");
+}
+
+async function enableSessionStorage(storage) {
+  const open = storage.session?.setAccessLevel;
+  if (typeof open !== "function") return;
+  try {
+    await open({ accessLevel: "TRUSTED_AND_UNTRUSTED_CONTEXTS" });
+  } catch {
+    // The popup can still write the session after the page replies.
+  }
 }
 
 const NOT_X_STATUS = "Abra uma aba do X para iniciar.";
@@ -99,19 +116,16 @@ async function rememberSession(storage, session) {
 }
 
 async function createController({ storage, tabs, elements }) {
-  try {
-    const stored = await storage.local.get(SETTINGS_STORAGE_KEY);
-    const validated = validateSettings(stored[SETTINGS_STORAGE_KEY] ?? defaultSettings());
-    paintSettings(elements, validated.ok ? validated.settings : defaultSettings());
-    const sessionStored = await storage.session.get(SESSION_STORAGE_KEY);
-    paintSession(elements, sessionStored[SESSION_STORAGE_KEY]);
-  } catch {
-    showDeliveryProblem(elements, "no-receiver");
-  }
+  let userActed = false;
+  let confirmedRunning = false;
+  let startInFlight = false;
+  const opening = enableSessionStorage(storage);
 
   storage.onChanged.addListener((changes, area) => {
     if (area !== "session" || !changes[SESSION_STORAGE_KEY]) return;
-    paintSession(elements, changes[SESSION_STORAGE_KEY].newValue);
+    const next = changes[SESSION_STORAGE_KEY].newValue;
+    if (next?.running === true) confirmedRunning = true;
+    paintSession(elements, next);
   });
 
   elements.unlimited.addEventListener("change", () => {
@@ -119,6 +133,13 @@ async function createController({ storage, tabs, elements }) {
   });
 
   let epoch = 0;
+
+  function giveUp(required, requireRunning, reason) {
+    if (requireRunning && confirmedRunning) return false;
+    if (!required && confirmedRunning) return false;
+    showDeliveryProblem(elements, reason);
+    return false;
+  }
 
   async function deliver(type, { required = false, requireRunning = false } = {}) {
     const mine = ++epoch;
@@ -128,45 +149,77 @@ async function createController({ storage, tabs, elements }) {
     } catch {
       delivery = { ok: false, reason: "no-receiver", session: null };
     }
-    if (mine !== epoch) return;
+    if (mine !== epoch) return false;
     const showNotX = required && delivery.reason === "not-x";
     const showMiss = delivery.reason === "no-receiver" || (required && !isSession(delivery.session));
     if (!delivery.ok && (delivery.reason === "no-receiver" || showNotX)) {
-      showDeliveryProblem(elements, delivery.reason);
-      return;
+      return giveUp(required, requireRunning, delivery.reason);
     }
     if (!isSession(delivery.session)) {
-      if (showMiss) showDeliveryProblem(elements, "no-receiver");
-      return;
+      if (showMiss) return giveUp(required, requireRunning, "no-receiver");
+      return false;
     }
     if (requireRunning && delivery.session.running !== true) {
-      showDeliveryProblem(elements, "no-receiver");
-      return;
+      return giveUp(required, requireRunning, "no-receiver");
     }
+    if (delivery.session.running === true) confirmedRunning = true;
     paintSession(elements, delivery.session);
     await rememberSession(storage, delivery.session);
+    return true;
   }
 
   elements.start.addEventListener("click", async () => {
+    if (startInFlight) return;
     const result = validateSettings(readForm(elements));
     if (!result.ok) {
       elements.error.textContent = result.errors.map((code) => settingsErrorMessage(code)).join(" ");
       return;
     }
     elements.error.textContent = "";
+    const countText = elements.count.textContent;
+    userActed = true;
+    confirmedRunning = false;
+    startInFlight = true;
+    paintSession(elements, { running: true, status: "running", likeCount: 0, stopReason: null });
     try {
-      await storage.local.set({ [SETTINGS_STORAGE_KEY]: result.settings });
-    } catch {
-      showDeliveryProblem(elements, "no-receiver");
-      return;
+      await opening;
+      try {
+        await storage.local.set({ [SETTINGS_STORAGE_KEY]: result.settings });
+      } catch {
+        showDeliveryProblem(elements, "no-receiver");
+        elements.count.textContent = countText;
+        return;
+      }
+      const started = await deliver("start", { required: true, requireRunning: true });
+      if (!started && !confirmedRunning && elements.start.hidden === false) {
+        elements.count.textContent = countText;
+      }
+    } finally {
+      startInFlight = false;
     }
-    await deliver("start", { required: true, requireRunning: true });
   });
 
   elements.stop.addEventListener("click", async () => {
+    if (startInFlight) return;
+    confirmedRunning = false;
     await deliver("stop", { required: true });
   });
 
+  try {
+    const stored = await storage.local.get(SETTINGS_STORAGE_KEY);
+    const validated = validateSettings(stored[SETTINGS_STORAGE_KEY] ?? defaultSettings());
+    const sessionStored = await storage.session.get(SESSION_STORAGE_KEY);
+    if (!userActed) {
+      paintSettings(elements, validated.ok ? validated.settings : defaultSettings());
+      const savedSession = sessionStored[SESSION_STORAGE_KEY];
+      if (savedSession?.running === true) confirmedRunning = true;
+      paintSession(elements, savedSession);
+    }
+  } catch {
+    if (!userActed) showDeliveryProblem(elements, "no-receiver");
+  }
+
+  await opening;
   await deliver("popup-open");
 
   return {
@@ -207,3 +260,4 @@ globalThis.XLikesPopup = { createController, boot };
 if (typeof chrome !== "undefined" && chrome.runtime?.id && typeof document !== "undefined") {
   boot();
 }
+})();

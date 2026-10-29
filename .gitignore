@@ -1,5 +1,10 @@
 node_modules/
-.DS_Store
-Thumbs.db
 *.log
-
+Thumbs.db
+.DS_Store
+# Release artifacts are built at tag time, never committed
+*.zip
+# Saved pages used as research material must never enter the repo
+*.mhtml
+# Generated images from chat tools must never enter the repo
+*.jfif

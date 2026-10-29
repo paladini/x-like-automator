@@ -8,18 +8,21 @@ import "../content/content.js";
 const { defaultSettings } = globalThis.XLikesPolicy;
 const {
   createSessionRunner,
+  handleControlMessage,
   isLoginEntryHref,
   isLoginWallUrl,
   isReplyContext,
   likeControlState,
   statusIdFromHref,
+  confirmPlainRepost,
 } = globalThis.XLikesContent;
 
-function harness(page) {
+function harness(page, overrides = {}) {
   const clicks = [];
   const scrolls = [];
   const published = [];
   const timers = [];
+  const reloads = [];
   let nextId = 1;
   const runner = createSessionRunner({
     getSettings: async () => defaultSettings(),
@@ -28,6 +31,8 @@ function harness(page) {
       clicks.push(postId);
       return true;
     },
+    openRepost: () => true,
+    confirmRepost: () => "done",
     scrollBy: (target) => {
       scrolls.push(target);
     },
@@ -45,8 +50,20 @@ function harness(page) {
       if (index >= 0) timers.splice(index, 1);
     },
     randomUnit: () => 0,
+    now: () => 0,
+    reload: () => reloads.push(1),
+    ...overrides,
   });
-  return { runner, clicks, scrolls, published, timers };
+  return { runner, clicks, scrolls, published, timers, reloads };
+}
+
+// schedule() swallows the tick promise, so flush the microtask chain the
+// tick awaits (getSettings, readSnapshot) before reading the session.
+async function runNextTimer(timers) {
+  const timer = timers.shift();
+  timer.fn();
+  for (let step = 0; step < 10; step += 1) await Promise.resolve();
+  return timer;
 }
 
 function homePage(overrides = {}) {
@@ -68,6 +85,21 @@ function homePage(overrides = {}) {
     ...overrides,
   };
 }
+
+test("a start message answers with a running session and keeps the channel open", () => {
+  const { runner } = harness(homePage());
+  let reply;
+  const kept = handleControlMessage(runner, { type: "start" }, (session) => {
+    reply = session;
+  });
+  assert.equal(kept, true);
+  assert.deepEqual(reply, {
+    status: "running",
+    likeCount: 0,
+    running: true,
+    stopReason: null,
+  });
+});
 
 test("start on a visible home timeline clicks the selected post once", async () => {
   const page = homePage();
@@ -173,6 +205,220 @@ test("reply context accepts Replying to and Respondendo a", () => {
   assert.equal(isReplyContext("Replying to @reader"), true);
   assert.equal(isReplyContext("Respondendo a @reader"), true);
   assert.equal(isReplyContext("and for dessert, a little scroll"), false);
+});
+
+test("an opened repost is confirmed on the next tick and marked done", async () => {
+  const page = homePage();
+  const reposted = [];
+  const confirmed = [];
+  const { runner, timers } = harness(page, {
+    openRepost: (postId) => {
+      reposted.push(postId);
+      return true;
+    },
+    confirmRepost: (postId) => {
+      confirmed.push(postId);
+      return "done";
+    },
+  });
+  await runner.start();
+  await runNextTimer(timers);
+  assert.deepEqual(reposted, ["10001"]);
+  assert.equal(runner.getSession().pendingRepostId, "10001");
+  assert.deepEqual(confirmed, []);
+  await runNextTimer(timers);
+  assert.deepEqual(confirmed, ["10001"]);
+  assert.deepEqual(runner.getSession().repostDoneIds, ["10001"]);
+  assert.equal(runner.getSession().pendingRepostId, null);
+});
+
+test("a skipped repost confirm retries instead of marking the post done", async () => {
+  const page = homePage();
+  let confirmCalls = 0;
+  const { runner, timers } = harness(page, {
+    confirmRepost: (postId) => {
+      confirmCalls += 1;
+      return confirmCalls === 2 ? "done" : "skipped";
+    },
+  });
+  await runner.start();
+  await runNextTimer(timers);
+  assert.equal(runner.getSession().pendingRepostId, "10001");
+  await runNextTimer(timers);
+  assert.equal(confirmCalls, 1);
+  assert.deepEqual(runner.getSession().repostDoneIds, []);
+  assert.equal(runner.getSession().pendingRepostId, "10001");
+  assert.equal(runner.getSession().running, true);
+  await runNextTimer(timers);
+  assert.equal(confirmCalls, 2);
+  assert.deepEqual(runner.getSession().repostDoneIds, ["10001"]);
+  assert.equal(runner.getSession().pendingRepostId, null);
+});
+
+test("a repost confirm gives up after three retries and releases the post", async () => {
+  const page = homePage();
+  let confirmCalls = 0;
+  const { runner, timers } = harness(page, {
+    confirmRepost: (postId) => {
+      confirmCalls += 1;
+      return "skipped";
+    },
+  });
+  await runner.start();
+  await runNextTimer(timers);
+  while (confirmCalls < 10 && runner.getSession().pendingRepostId) {
+    await runNextTimer(timers);
+  }
+  assert.equal(confirmCalls, 4);
+  assert.equal(runner.getSession().pendingRepostId, null);
+  assert.deepEqual(runner.getSession().repostDoneIds, ["10001"]);
+});
+
+test("a failed repost open retries until the button is found", async () => {
+  const page = homePage();
+  let openCalls = 0;
+  const { runner, timers } = harness(page, {
+    openRepost: (postId) => {
+      openCalls += 1;
+      return openCalls >= 3;
+    },
+    confirmRepost: (postId) => "done",
+  });
+  await runner.start();
+  while (openCalls < 3) {
+    await runNextTimer(timers);
+  }
+  assert.equal(runner.getSession().pendingRepostId, "10001");
+  await runNextTimer(timers);
+  assert.deepEqual(runner.getSession().repostDoneIds, ["10001"]);
+  assert.equal(runner.getSession().running, true);
+});
+
+test("a running session reloads the page once every five minutes", async () => {
+  let clock = 0;
+  const { runner, timers, reloads } = harness(homePage(), { now: () => clock });
+  await runner.start();
+  assert.deepEqual(reloads, []);
+  clock = 299999;
+  await runNextTimer(timers);
+  assert.deepEqual(reloads, []);
+  clock = 300000;
+  await runNextTimer(timers);
+  assert.deepEqual(reloads, [1]);
+  assert.equal(timers.length, 0); // the reload replaces the tick loop
+  assert.equal(runner.getSession().running, true); // still running for the next page
+});
+
+test("resume continues a session saved before the reload", async () => {
+  let clock = 0;
+  const { runner, timers, reloads } = harness(homePage(), { now: () => clock });
+  await runner.resume({ likeCount: 5, running: true });
+  assert.equal(runner.getSession().running, true);
+  assert.equal(runner.getSession().likeCount, 6); // the saved 5 plus the fresh like
+  assert.deepEqual(runner.getSession().repostDoneIds, []);
+  clock = 300000;
+  await runNextTimer(timers);
+  assert.deepEqual(reloads, [1]);
+});
+
+test("stop ends the reload cycle", async () => {
+  let clock = 0;
+  const { runner, timers, reloads } = harness(homePage(), { now: () => clock });
+  await runner.start();
+  runner.stop();
+  clock = 300000;
+  assert.equal(timers.length, 0);
+  assert.deepEqual(reloads, []);
+});
+
+function fakeRepostMenuDoc({ insideArticle = false } = {}) {
+  const clickable = {
+    innerText: "Repostar",
+    getAttribute: () => "",
+    querySelectorAll: () => [],
+    closest: (sel) => (sel === "article" && insideArticle ? { placeholder: true } : null),
+    clicked: 0,
+    click() {
+      this.clicked += 1;
+    },
+  };
+  const label = {
+    childElementCount: 0,
+    innerText: "Repostar",
+    getAttribute: () => "",
+    closest: () => clickable,
+  };
+  return {
+    clickable,
+    querySelector: () => null,
+    querySelectorAll(sel) {
+      if (sel === "[role='menuitem'], [role='menuitemradio'], [role='button'], button, a") return [];
+      if (sel.startsWith("span")) return [label];
+      return [];
+    },
+  };
+}
+
+test("the repost menu fallback clicks the label outside any known menu root", () => {
+  const doc = fakeRepostMenuDoc();
+  assert.equal(confirmPlainRepost(doc, "pt-BR"), "done");
+  assert.equal(doc.clickable.clicked, 1);
+});
+
+test("the retweetConfirm anchor is clicked even without any known menu root", () => {
+  const anchor = {
+    innerText: "Repostar",
+    textContent: "Repostar",
+    getAttribute: () => "",
+    querySelectorAll: () => [],
+    closest: () => null,
+    clicked: 0,
+    click() {
+      this.clicked += 1;
+    },
+  };
+  const doc = {
+    querySelector: (sel) => (sel === "[data-testid='retweetConfirm']" ? anchor : null),
+    querySelectorAll: () => [],
+  };
+  assert.equal(confirmPlainRepost(doc, "pt-BR"), "done");
+  assert.equal(anchor.clicked, 1);
+});
+
+test("a bare repost label walks up to its tabindex menu row", () => {
+  const row = {
+    getAttribute: () => "",
+    querySelectorAll: () => [],
+    closest: () => null,
+    clicked: 0,
+    click() {
+      this.clicked += 1;
+    },
+  };
+  const label = {
+    childElementCount: 0,
+    innerText: "Repostar",
+    textContent: "Repostar",
+    getAttribute: () => "",
+    closest: (sel) => (sel.startsWith("[tabindex]") ? row : null),
+  };
+  const doc = {
+    querySelector: () => null,
+    querySelectorAll(sel) {
+      if (sel.startsWith("span")) return [label];
+      return [];
+    },
+  };
+  assert.equal(confirmPlainRepost(doc, "pt-BR"), "done");
+  assert.equal(row.clicked, 1);
+});
+
+test("timeline repost buttons are never treated as the open menu", () => {
+  const doc = fakeRepostMenuDoc({ insideArticle: true });
+  let closed = 0;
+  assert.equal(confirmPlainRepost(doc, "pt-BR", () => { closed += 1; }), "skipped");
+  assert.equal(closed, 1);
+  assert.equal(doc.clickable.clicked, 0);
 });
 
 test("the content script does not touch cookies or an X API token", () => {

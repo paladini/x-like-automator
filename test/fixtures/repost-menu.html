@@ -7,11 +7,20 @@
   <body>
     <article data-testid="tweet">
       <a href="/reader/status/10001"><time>now</time></a>
-      <button id="repost-icon" type="button" aria-label="Repostar" data-testid="retweet">Repostar</button>
+      <!-- Live X puts the label in a span, not always in aria-label. -->
+      <div id="repost-icon" type="button" role="button" data-testid="retweet">
+        <span class="css-1jxf684 r-bcqeeo r-1ttztb7 r-qvutc0 r-poiln3">Repostar</span>
+      </div>
     </article>
+    <!-- Anchor variant: X's stable testid for the plain item. -->
     <div id="share-menu" data-testid="Dropdown" role="menu">
       <div id="plain" role="menuitem" data-testid="retweetConfirm"><span>Repostar</span></div>
       <a id="quote" role="menuitem" href="/compose/post"><span>Comentar</span></a>
+    </div>
+    <!-- Bare variant: label only, no roles or testids; the tabbable row is clickable. -->
+    <div id="bare-menu" tabindex="-1">
+      <div tabindex="0"><span class="css-1jxf684">Repostar</span></div>
+      <div tabindex="0"><span class="css-1jxf684">Comentar</span></div>
     </div>
   </body>
 </html>

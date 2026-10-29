@@ -165,6 +165,104 @@ test("a content script that does not answer asks for a reload", async () => {
   assert.equal(elements.status.textContent, "Recarregue a aba do X e toque em Iniciar de novo.");
 });
 
+test("start switches the button to Parar before the tab answers", async () => {
+  const { elements, storage, tabs } = harness({ url: "https://x.com/home" });
+  let release;
+  const gate = new Promise((resolve) => {
+    release = resolve;
+  });
+  tabs.sendMessage = async (_tabId, message) => {
+    if (message.type === "start") {
+      await gate;
+      return { running: true, status: "running", likeCount: 0, stopReason: null };
+    }
+    return { running: false, status: "stopped", likeCount: 0, stopReason: null };
+  };
+  await createController({ storage, tabs, elements });
+  const pending = elements.start.click();
+  assert.equal(elements.status.textContent, "Curtindo");
+  assert.equal(elements.status.dataset.tone, "live");
+  assert.equal(elements.start.hidden, true);
+  assert.equal(elements.stop.hidden, false);
+  assert.equal(elements.stop.dataset.state, "running");
+  release();
+  await pending;
+  assert.equal(elements.start.hidden, true);
+  assert.equal(elements.stop.hidden, false);
+});
+
+test("a stored running session stays on Parar when the tab does not answer", async () => {
+  const { elements, storage, tabs } = harness({
+    url: "https://x.com/home",
+    session: { running: true, status: "running", likeCount: 3, stopReason: null },
+  });
+  tabs.sendMessage = async () => {
+    throw new Error("Could not establish connection. Receiving end does not exist.");
+  };
+  await createController({ storage, tabs, elements });
+  assert.equal(elements.status.textContent, "Curtindo");
+  assert.equal(elements.start.hidden, true);
+  assert.equal(elements.stop.hidden, false);
+  assert.equal(elements.stop.dataset.state, "running");
+  assert.equal(elements.count.textContent, "Curtidas nesta sessão: 3");
+});
+
+test("a start already stored by the page stays on Parar when the reply is empty", async () => {
+  const { elements, storage, tabs, listeners } = harness({ url: "https://x.com/home" });
+  const writes = [];
+  storage.session.set = async (value) => {
+    writes.push(value);
+  };
+  tabs.sendMessage = async (_tabId, message) => {
+    if (message.type === "start") {
+      listeners[0]({
+        session: { newValue: { status: "running", running: true, likeCount: 1, stopReason: null } },
+      }, "session");
+      return undefined;
+    }
+    return { running: false, status: "stopped", likeCount: 0, stopReason: null };
+  };
+  await createController({ storage, tabs, elements });
+  const writesBeforeStart = writes.length;
+  await elements.start.click();
+  assert.equal(elements.status.textContent, "Curtindo");
+  assert.equal(elements.start.hidden, true);
+  assert.equal(elements.stop.hidden, false);
+  assert.equal(elements.count.textContent, "Curtidas nesta sessão: 1");
+  assert.equal(writes.length, writesBeforeStart);
+});
+
+test("opening the popup lets the page store the session", async () => {
+  const { elements, storage, tabs } = harness({ url: "https://x.com/home" });
+  const calls = [];
+  storage.session.setAccessLevel = async (options) => {
+    calls.push(options);
+  };
+  await createController({ storage, tabs, elements });
+  assert.deepEqual(calls, [{ accessLevel: "TRUSTED_AND_UNTRUSTED_CONTEXTS" }]);
+});
+
+test("a confirmed start is stored for the next time the popup opens", async () => {
+  const { elements, storage, tabs } = harness({ url: "https://x.com/home" });
+  const writes = [];
+  storage.session.set = async (value) => {
+    writes.push(value);
+  };
+  tabs.sendMessage = async (_tabId, message) => {
+    if (message.type === "start") {
+      return { running: true, status: "running", likeCount: 2, stopReason: null };
+    }
+    return { running: false, status: "stopped", likeCount: 0, stopReason: null };
+  };
+  await createController({ storage, tabs, elements });
+  await elements.start.click();
+  assert.deepEqual(writes.at(-1), {
+    session: { running: true, status: "running", likeCount: 2, stopReason: null },
+  });
+  assert.equal(elements.stop.hidden, false);
+  assert.equal(elements.start.hidden, true);
+});
+
 test("the status node shows the spec sentence and the count prefix", async () => {
   const { elements, storage, tabs, listeners } = harness({
     session: { status: "paused_inactive", likeCount: 4 },

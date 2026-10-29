@@ -7,6 +7,7 @@ const {
   POPUP_FOCUS_GRACE_MS,
   SESSION_STORAGE_KEY,
   SETTINGS_STORAGE_KEY,
+  PAGE_RELOAD_MS,
   activityDecision,
   allowedAction,
   annotateThread,
@@ -29,6 +30,7 @@ const {
   popupView,
   repostControlState,
   repostMenuChoice,
+  resumeSession,
   stopSession,
   validateSettings,
 } = globalThis.XLikesPolicy;
@@ -99,7 +101,35 @@ test("start sets a fresh session", () => {
     stopReason: null,
     status: "running",
     backoffStep: 0,
+    startedAt: null,
   });
+});
+
+test("start records when the session began for the auto-reload cycle", () => {
+  assert.equal(startSession(1234).startedAt, 1234);
+});
+
+test("resume keeps the like count but re-derives the timeline view", () => {
+  const resumed = resumeSession(
+    { likeCount: 7, running: true, seenIds: ["10001"], repostDoneIds: ["10001"], status: "running" },
+    9999,
+  );
+  assert.equal(resumed.likeCount, 7);
+  assert.equal(resumed.running, true);
+  assert.equal(resumed.status, "running");
+  assert.equal(resumed.startedAt, 9999);
+  assert.deepEqual(resumed.seenIds, []);
+  assert.deepEqual(resumed.repostDoneIds, []);
+  assert.equal(resumed.pendingRepostId, null);
+});
+
+test("resume without a usable count starts from zero", () => {
+  assert.equal(resumeSession({ likeCount: "9" }, 1).likeCount, 0);
+  assert.equal(resumeSession(undefined, 1).likeCount, 0);
+});
+
+test("the page auto-reload interval is five minutes", () => {
+  assert.equal(PAGE_RELOAD_MS, 300000);
 });
 
 test("stop keeps the count and does not stay running", () => {
@@ -350,6 +380,19 @@ test("spanish clicks Repostear and never Cita", () => {
   assert.equal(likeControlState({ ariaLabel: "Cancelar Me gusta", pressed: "false" }, "es"), "liked");
 });
 
+test("repost falls back to inner text when aria-label moved into a span", () => {
+  assert.equal(repostControlState({ testid: "", ariaLabel: "", text: "Repostar", pressed: "" }, "pt-BR"), "repost");
+  assert.equal(repostControlState({ testid: "", ariaLabel: "", text: "Desfazer repost", pressed: "" }, "pt-BR"), "reposted");
+  assert.equal(repostControlState({ testid: "retweet", ariaLabel: "", text: "Repostar", pressed: "true" }, "pt-BR"), "reposted");
+  assert.equal(repostControlState({ testid: "retweet", ariaLabel: "", text: "Desfazer repost", pressed: "" }, "pt-BR"), "reposted");
+});
+
+test("the retweet testid identifies the control when every label match fails", () => {
+  assert.equal(repostControlState({ testid: "retweet", ariaLabel: "Reenviar", pressed: "" }, "pt-BR"), "repost");
+  assert.equal(repostControlState({ testid: "retweet", ariaLabel: "Reenviar", pressed: "true" }, "pt-BR"), "reposted");
+  assert.equal(repostControlState({ testid: "like", ariaLabel: "Reenviar", pressed: "" }, "pt-BR"), "other");
+});
+
 test("every sourced language keeps plain repost apart from quote and undo", () => {
   assert.equal(globalThis.XLikesLanguages.some((language) => language.id === "ur"), false);
   for (const language of globalThis.XLikesLanguages) {
@@ -552,6 +595,20 @@ test("an automation notice waits and then the session continues", () => {
     session: { ...paused, status: "running", pendingRepostId: null },
   }));
   assert.equal(again.action, "like");
+});
+
+test("repost-retry keeps the pending repost, the done list, and the session running", () => {
+  const session = { ...startSession(), pendingRepostId: "10001", likeCount: 3 };
+  const next = applyPlan(
+    session,
+    { action: "repost-retry", postId: "10001", waitMs: 1000 },
+    defaultSettings(),
+  );
+  assert.equal(next.pendingRepostId, "10001");
+  assert.equal(next.running, true);
+  assert.equal(next.status, "running");
+  assert.deepEqual(next.repostDoneIds, []);
+  assert.equal(next.likeCount, 3);
 });
 
 test("home and search paths classify", () => {

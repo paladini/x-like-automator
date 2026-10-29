@@ -171,6 +171,24 @@ button {
   cursor: pointer;
 }
 
+#stop {
+  background: transparent;
+  color: var(--amber);
+  border-color: var(--amber);
+}
+
+#stop[data-state="running"]::before {
+  content: "";
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-right: 0.55rem;
+  border-radius: 50%;
+  background: var(--amber);
+  vertical-align: 0.05em;
+  animation: live-pulse 1.4s ease-in-out infinite;
+}
+
 button[hidden] {
   display: none;
 }

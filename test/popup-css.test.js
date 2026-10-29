@@ -13,6 +13,12 @@ test("the popup background is #12141a and the text is #f4f1ea", () => {
   assert.equal(/--text:\s*#12141a\b/.test(css), false);
 });
 
+test("the running control is distinct from the start button", () => {
+  assert.match(css, /#stop\s*\{[^}]*background:\s*transparent;/s);
+  assert.match(css, /#stop\s*\{[^}]*border-color:\s*var\(--amber\);/s);
+  assert.match(css, /#stop\[data-state="running"\]::before\s*\{[^}]*animation:\s*live-pulse/s);
+});
+
 test("keyboard focus has a visible outline", () => {
   assert.match(css, /:focus-visible\s*\{[^}]*outline\s*:/s);
 });
