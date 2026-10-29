@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "X Likes Automator",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Curte posts no X a partir da aba que você já deixou aberta.",
   "author": "Fernando Paladini",
   "action": {

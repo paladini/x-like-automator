@@ -1,11 +1,27 @@
 {
   "name": "x-likes-automator",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "Manifest V3 extension that likes posts on X from the open tab.",
   "license": "MIT",
   "author": "Fernando Paladini",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/paladini/x-likes-automator.git"
+  },
+  "bugs": {
+    "url": "https://github.com/paladini/x-likes-automator/issues"
+  },
+  "homepage": "https://github.com/paladini/x-likes-automator#readme",
+  "keywords": [
+    "browser-extension",
+    "chrome-extension",
+    "manifest-v3",
+    "x",
+    "twitter",
+    "automation"
+  ],
   "scripts": {
     "test": "node --test"
   }
