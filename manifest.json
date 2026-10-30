@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "X Likes Automator",
+  "name": "X Like Automator",
   "version": "1.1.0",
   "description": "Curte posts no X a partir da aba que você já deixou aberta.",
   "author": "Fernando Paladini",
   "action": {
-    "default_title": "X Likes Automator",
+    "default_title": "X Like Automator",
     "default_popup": "popup/popup.html",
     "default_icon": {
       "16": "icons/icon-16.png",

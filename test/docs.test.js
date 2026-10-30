@@ -223,8 +223,8 @@ test("the README badge row carries license, MV3, no-build, version, tests, and C
   assert.match(readme, /img\.shields\.io\/badge\/tests-\d+--passing-brightgreen/);
   assert.equal(
     readme.includes(
-      "[![CI](https://github.com/paladini/x-likes-automator/actions/workflows/test.yml/badge.svg)]"
-      + "(https://github.com/paladini/x-likes-automator/actions/workflows/test.yml)",
+      "[![CI](https://github.com/paladini/x-like-automator/actions/workflows/test.yml/badge.svg)]"
+      + "(https://github.com/paladini/x-like-automator/actions/workflows/test.yml)",
     ),
     true,
   );

@@ -9,7 +9,7 @@ that breaks that model, we want to know.
 **Do not open a public issue for security problems.** Report them privately:
 
 1. Use GitHub's **Report a vulnerability** form on the repository's Security tab
-   (github.com/paladini/x-likes-automator/security) to open a private security
+   (github.com/paladini/x-like-automator/security) to open a private security
    advisory, or
 2. Open a regular issue containing only the words "security contact request" and wait
    for the maintainer to move the conversation to a private channel.

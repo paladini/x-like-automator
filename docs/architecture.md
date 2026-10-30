@@ -2,7 +2,7 @@
 
 [← Back to README](../README.md)
 
-X Likes Automator is a Manifest V3 extension with **no background service worker**.
+X Like Automator is a Manifest V3 extension with **no background service worker**.
 The design is one hard seam:
 
 > **Policy pure, adapter thin.** `lib/policy.js` owns every decision as plain data in /
@@ -189,7 +189,7 @@ the post is marked handled so the session never loops on one stubborn post.
 
 At `now − startedAt ≥ PAGE_RELOAD_MS` (300000 ms = 5 minutes) the adapter calls
 `location.reload()`. On boot the content script checks a **per-tab `sessionStorage`
-marker** (`x-likes-automator:session-tab`) plus a `storage.session` snapshot reporting
+marker** (`x-like-automator:session-tab`) plus a `storage.session` snapshot reporting
 `running: true`; only when both agree does it `resumeSession` — counters survive, the
 sweep restarts from the live page state. A second X tab has no marker and stays idle
 — no cross-tab session theft. A browser restart clears `storage.session`, so a fresh

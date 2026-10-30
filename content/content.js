@@ -1,6 +1,6 @@
 const policy = globalThis.XLikesPolicy;
 
-const TAB_SESSION_MARKER = "x-likes-automator:session-tab";
+const TAB_SESSION_MARKER = "x-like-automator:session-tab";
 
 function readTabMarker(windowRef) {
   try { return windowRef.sessionStorage.getItem(TAB_SESSION_MARKER) === "1"; } catch { return false; }

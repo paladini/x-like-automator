@@ -12,8 +12,8 @@ test("the README is the English main document and links to the Portuguese transl
 });
 
 test("the English README explains the open tab, unpacked load, settings, author, MIT, and the rules note", () => {
-  assert.equal(readme.includes("https://github.com/paladini/x-likes-automator"), true);
-  assert.equal(readme.includes("https://github.com/paladini/x-likes-automator/releases/tag/v1.1.0"), true);
+  assert.equal(readme.includes("https://github.com/paladini/x-like-automator"), true);
+  assert.equal(readme.includes("https://github.com/paladini/x-like-automator/releases/tag/v1.1.0"), true);
   assert.equal(readme.includes("tab you already have open"), true);
   assert.equal(readme.includes("chrome://extensions"), true);
   assert.equal(readme.includes("brave://extensions"), true);
@@ -29,8 +29,8 @@ test("the English README explains the open tab, unpacked load, settings, author,
 });
 
 test("the Portuguese README covers the same ground: aba aberta, carga sem compactação, opções, autor, MIT, e o aviso das regras", () => {
-  assert.equal(readmePt.includes("https://github.com/paladini/x-likes-automator"), true);
-  assert.equal(readmePt.includes("https://github.com/paladini/x-likes-automator/releases/tag/v1.1.0"), true);
+  assert.equal(readmePt.includes("https://github.com/paladini/x-like-automator"), true);
+  assert.equal(readmePt.includes("https://github.com/paladini/x-like-automator/releases/tag/v1.1.0"), true);
   assert.equal(readmePt.includes("aba do X"), true);
   assert.equal(readmePt.includes("chrome://extensions"), true);
   assert.equal(readmePt.includes("brave://extensions"), true);

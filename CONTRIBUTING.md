@@ -13,8 +13,8 @@ the ground rules before investing effort.
   test runner:
 
   ```bash
-  git clone https://github.com/paladini/x-likes-automator.git
-  cd x-likes-automator
+  git clone https://github.com/paladini/x-like-automator.git
+  cd x-like-automator
   npm test          # same as: node --test
   ```
 
@@ -28,7 +28,7 @@ the ground rules before investing effort.
 No build step, no runtime dependencies — the whole repository is the extension:
 
 ```
-x-likes-automator/
+x-like-automator/
 ├── manifest.json             # Manifest V3: permissions, content scripts, popup
 ├── lib/
 │   ├── ui-languages.js       # 49 X locale label packs + the NEVER_QUOTE blacklist

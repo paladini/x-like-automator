@@ -26,12 +26,12 @@ the repository.
 
 1. Download or clone this repository:
    ```bash
-   git clone https://github.com/paladini/x-likes-automator.git
+   git clone https://github.com/paladini/x-like-automator.git
    ```
 2. Open `chrome://extensions`.
 3. Turn on **Developer mode** (toggle in the top-right corner).
 4. Click **Load unpacked**.
-5. Select the `x-likes-automator` folder — the one that contains `manifest.json`.
+5. Select the `x-like-automator` folder — the one that contains `manifest.json`.
 6. (Recommended) Click the puzzle-piece icon in the toolbar and **pin** *X Likes
    Automator* so the popup is one click away.
 
@@ -60,7 +60,7 @@ re-check every 2 seconds. As soon as you sign in, a running session resumes by i
 
 ### Step 2 — Open the popup
 
-Click the pinned *X Likes Automator* toolbar icon. The popup shows the current
+Click the pinned *X Like Automator* toolbar icon. The popup shows the current
 **status** (initially `Parado` — "Stopped"), the **like count** for the current
 session (`Curtidas nesta sessão: 0`), and the settings described in the
 [configuration reference](configuration.md).

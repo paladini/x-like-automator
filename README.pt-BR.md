@@ -1,6 +1,6 @@
 <div align="center">
 
-# X Likes Automator
+# X Like Automator
 
 **Curtir automaticamente os posts visíveis no X (Twitter) — direto na aba que você já tem aberta.**
 
@@ -9,7 +9,7 @@
 ![Build](https://img.shields.io/badge/sem%20etapa%20de%20build-blue)
 ![Versão](https://img.shields.io/badge/versão-1.1.0-lightgrey)
 ![Testes](https://img.shields.io/badge/testes-171--passando-brightgreen)
-[![CI](https://github.com/paladini/x-likes-automator/actions/workflows/test.yml/badge.svg)](https://github.com/paladini/x-likes-automator/actions/workflows/test.yml)
+[![CI](https://github.com/paladini/x-like-automator/actions/workflows/test.yml/badge.svg)](https://github.com/paladini/x-like-automator/actions/workflows/test.yml)
 
 [English](README.md) · **Português**
 
@@ -17,14 +17,14 @@
 
 ---
 
-O **X Likes Automator** é uma extensão Manifest V3 que clica no botão Curtir dos posts
+O **X Like Automator** é uma extensão Manifest V3 que clica no botão Curtir dos posts
 visíveis que ainda não foram curtidos. Ele age apenas na aba do X (ou do Twitter) que
 você já deixou aberta e na qual você já entrou. Não pede senha, não lê cookies e não
 usa token da API do X — ele simplesmente usa a página como você usaria, no ritmo que
 você configurar.
 
-- **Repositório:** <https://github.com/paladini/x-likes-automator>
-- **Versão:** [v1.1.0](https://github.com/paladini/x-likes-automator/releases/tag/v1.1.0)
+- **Repositório:** <https://github.com/paladini/x-like-automator>
+- **Versão:** [v1.1.0](https://github.com/paladini/x-like-automator/releases/tag/v1.1.0)
 - **Histórico de mudanças:** [CHANGELOG.md](CHANGELOG.md)
 - **Autor:** Fernando Paladini
 - **Licença:** MIT
@@ -153,7 +153,7 @@ Não há etapa de build. Baixe o zip da release ou clone o repositório e carreg
 
 ### Baixar
 
-1. Baixe [x-likes-automator-1.1.0.zip](https://github.com/paladini/x-likes-automator/releases/download/v1.1.0/x-likes-automator-1.1.0.zip) na [release v1.1.0](https://github.com/paladini/x-likes-automator/releases/tag/v1.1.0).
+1. Baixe [x-like-automator-1.1.0.zip](https://github.com/paladini/x-like-automator/releases/download/v1.1.0/x-like-automator-1.1.0.zip) na [release v1.1.0](https://github.com/paladini/x-like-automator/releases/tag/v1.1.0).
 2. Descompacte. A pasta precisa ter o `manifest.json` na raiz.
 3. Carregue a pasta sem compactação, nos passos abaixo.
 
@@ -161,14 +161,14 @@ Não há etapa de build. Baixe o zip da release ou clone o repositório e carreg
 
 1. Baixe ou clone este repositório:
    ```bash
-   git clone https://github.com/paladini/x-likes-automator.git
+   git clone https://github.com/paladini/x-like-automator.git
    ```
 2. Abra `chrome://extensions`.
 3. Ative o **Modo do desenvolvedor** (chave no canto superior direito).
 4. Clique em **Carregar sem compactação**.
-5. Selecione a pasta `x-likes-automator` — a que contém o `manifest.json`.
+5. Selecione a pasta `x-like-automator` — a que contém o `manifest.json`.
 6. (Recomendado) Clique no ícone de quebra-cabeça da barra de ferramentas e
-   **fixe** o *X Likes Automator* para o popup ficar a um clique.
+   **fixe** o *X Like Automator* para o popup ficar a um clique.
 
 ### Brave
 
@@ -196,7 +196,7 @@ está em [docs/getting-started.md](docs/getting-started.md) (em inglês).
    parede de login, a extensão detecta, mostra *"Entre no X nesta aba para começar"* e
    confere de novo a cada 2 segundos — uma sessão em andamento volta sozinha assim que
    você entrar.
-2. **Abra o popup.** Clique no ícone fixado do *X Likes Automator*. Você vê o status
+2. **Abra o popup.** Clique no ícone fixado do *X Like Automator*. Você vê o status
    (inicialmente `Parado`), a contagem da sessão e as opções abaixo. Abrir o popup
    **não** pausa a sessão — dá para acompanhar a contagem subindo.
 3. **Ajuste o ritmo.** **Intervalo entre curtidas** (segundos). O delay real é
@@ -353,8 +353,8 @@ Arquivos do projeto: [CONTRIBUTING.md](CONTRIBUTING.md) · [CHANGELOG.md](CHANGE
 Sem etapa de build, sem dependências de runtime. O repositório inteiro é a extensão.
 
 ```bash
-git clone https://github.com/paladini/x-likes-automator.git
-cd x-likes-automator
+git clone https://github.com/paladini/x-like-automator.git
+cd x-like-automator
 npm test        # roda node --test (Node 20+); sem etapa de instalação
 ```
 
